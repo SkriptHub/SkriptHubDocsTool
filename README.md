@@ -29,7 +29,7 @@ Skript Hub Docs Tools is a plugin for Spigot servers to help Skript Addon Develo
 
 ### How do I use the Skript Documentation Annotations?
 
-A tutorial is coming soon, however for now TuSKe has a good example [here](https://github.com/Tuke-Nuke/TuSKe/blob/master/src/main/java/com/github/tukenuke/tuske/effects/EffCancelDrop.java#L20).
+A tutorial can be found [here](https://skripthub.net/tutorials/11).
 
 ### How does auto merge work?
 
