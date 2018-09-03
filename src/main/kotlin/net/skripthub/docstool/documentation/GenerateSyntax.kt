@@ -120,7 +120,11 @@ class GenerateSyntax {
             if (info.docName != null && info.docName.equals(ClassInfo.NO_DOC))
                 return null
             val data = SyntaxData()
-            data.name = info.docName
+            if (info.docName != null){
+                data.name = info.docName
+            } else {
+                data.name = info.codeName
+            }
             data.id = info.c.simpleName
             data.description = removeHTML(info.description as? Array<String>)
             data.examples = cleanExamples(info.examples)
@@ -130,12 +134,17 @@ class GenerateSyntax {
                 data.since = arrayOf(sinceString)
             }
 
-            if (info.userInputPatterns != null) {
+            if (info.userInputPatterns != null && info.userInputPatterns!!.isNotEmpty()) {
                 val size = info.userInputPatterns!!.size
-                data.patterns = Array (size, { _ -> "" })
+                data.patterns = Array (size) { _ -> "" }
                 var x = 0
-                for (p in info.userInputPatterns!!)
-                    data.patterns!![x++] = p.pattern().replace("\\((.+?)\\)\\?".toRegex(), "[$1]").replace("(.)\\?".toRegex(), "[$1]")
+                for (p in info.userInputPatterns!!) {
+                    data.patterns!![x++] = p.pattern()
+                            .replace("\\((.+?)\\)\\?".toRegex(), "[$1]")
+                            .replace("(.)\\?".toRegex(), "[$1]")
+                }
+            } else {
+                data.patterns = Array (1) { _ -> info.codeName }
             }
             return data
         }

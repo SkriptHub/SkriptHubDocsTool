@@ -20,7 +20,7 @@ data class SyntaxData(var id: String? = null,
         val map = LinkedHashMap<String, Any>()
         addProperty(map, "ID", id!!)
         addProperty(map, "Name", name!!)
-        if( description != null){
+        if(description != null){
             addArray(map, "Description", description!!)
         }
         if (examples != null){

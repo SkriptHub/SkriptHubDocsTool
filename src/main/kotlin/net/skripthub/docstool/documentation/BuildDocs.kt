@@ -91,12 +91,15 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         log.clear()
         log.stop()
 
+        // Types
         for (syntaxElementInfo in Classes.getClassInfos()) {
             val addonTypes = getAddon(syntaxElementInfo)?.types
             if(addonTypes != null){
-                addSyntax(addonTypes, GenerateSyntax.generateSyntaxFromClassInfo(syntaxElementInfo))
+                addSyntax(addonTypes,
+                        GenerateSyntax.generateSyntaxFromClassInfo(syntaxElementInfo))
             }
         }
+
         // Functions
         val functions = ReflectionUtils.invokeMethod<Collection<JavaFunction<*>>>(Functions::class.java, "getJavaFunctions", null)
         if (functions != null) {
@@ -235,7 +238,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
 
     private fun idCollisionErrorMessage(addon: String, id: String){
         sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
-                + ChatColor.RESET + "] " + ChatColor.RED + "ID CONFLICT DETECTED!\n" +
+                + ChatColor.RESET + "] " + ChatColor.RED + "ID COLLISION DETECTED!\n" +
                 "Plugin: $addon\nMultiple syntax elements with the same id: $id")
     }
 
@@ -243,8 +246,9 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         if(syntax == null){
             return
         }
-        if (syntax.name == null || syntax.name!!.isEmpty())
+        if (syntax.name == null || syntax.name!!.isEmpty()) {
             return
+        }
         if (syntax.patterns == null || syntax.patterns!!.isEmpty()) {
             return
         }
