@@ -11,6 +11,7 @@ import ch.njol.skript.registrations.Classes
 import net.skripthub.docstool.modals.SyntaxData
 import net.skripthub.docstool.utils.EventValuesGetter
 import net.skripthub.docstool.utils.ReflectionUtils
+import org.bukkit.Bukkit
 import org.bukkit.event.Cancellable
 import java.util.*
 
@@ -23,7 +24,7 @@ class GenerateSyntax {
             val data = SyntaxData()
             data.name = info.getName()
             data.id = info.id
-            if(info.documentationID != null){
+            if (info.documentationID != null) {
                 data.id = info.documentationID
             }
             data.description = removeHTML(info.description as? Array<String>)
@@ -126,6 +127,9 @@ class GenerateSyntax {
                 data.name = info.codeName
             }
             data.id = info.c.simpleName
+            if (data.id.equals("Type")) {
+                data.id = data.id + data.name?.replace(" ", "")
+            }
             data.description = removeHTML(info.description as? Array<String>)
             data.examples = cleanExamples(info.examples)
             data.usage = removeHTML(info.usage as? Array<String>)
