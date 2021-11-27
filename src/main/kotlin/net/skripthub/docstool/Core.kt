@@ -16,7 +16,7 @@ class Core: JavaPlugin() {
                 + ChatColor.RESET + "] " + ChatColor.RED + "For development servers only! Do not run "
                 + "this in production!")
         plugin = this
-        getCommand("gendocs").executor = GenerateDocsCommand()
+        getCommand("gendocs")?.setExecutor(GenerateDocsCommand())
         server.consoleSender.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
                 + ChatColor.RESET + "] " + ChatColor.RED + "Skript Hub Docs Tool Enabled")
     }

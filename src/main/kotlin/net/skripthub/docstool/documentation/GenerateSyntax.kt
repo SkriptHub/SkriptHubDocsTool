@@ -2,18 +2,22 @@ package net.skripthub.docstool.documentation
 
 import ch.njol.skript.classes.Changer
 import ch.njol.skript.classes.ClassInfo
+import ch.njol.skript.config.validate.NodeValidator
+import ch.njol.skript.config.validate.SectionValidator
 import ch.njol.skript.doc.*
 import ch.njol.skript.lang.ExpressionInfo
 import ch.njol.skript.lang.SkriptEventInfo
 import ch.njol.skript.lang.SyntaxElementInfo
 import ch.njol.skript.lang.function.JavaFunction
 import ch.njol.skript.registrations.Classes
+import net.skripthub.docstool.modals.DocumentationEntryNode
 import net.skripthub.docstool.modals.SyntaxData
 import net.skripthub.docstool.utils.EventValuesGetter
 import net.skripthub.docstool.utils.ReflectionUtils
-import org.bukkit.Bukkit
 import org.bukkit.event.Cancellable
+import java.lang.reflect.Field
 import java.util.*
+
 
 class GenerateSyntax {
     companion object {
@@ -28,7 +32,7 @@ class GenerateSyntax {
                 data.id = info.documentationID
             }
             data.description = removeHTML(info.description as? Array<String>)
-            data.examples = cleanExamples(info.examples)
+            data.examples = cleanExamples(info.examples as Array<String>?)
             data.patterns = cleanupSyntaxPattern(info.patterns)
             if (data.patterns != null && data.name != null && data.name!!.startsWith("On ")) {
                 for (x in 0 until data.patterns!!.size)
@@ -48,7 +52,7 @@ class GenerateSyntax {
                     break
                 }
 
-            data.requiredPlugins = info.requiredPlugins
+            data.requiredPlugins = info.requiredPlugins as Array<String>?
 
             if (getter != null) {
                 val classes = getter.getEventValues(info.events)
@@ -62,6 +66,8 @@ class GenerateSyntax {
                             .mapTo(times) { time[x] + it.codeName }
                 data.eventValues = times.toTypedArray()
             }
+
+            data.entries = getEntiresFromSkriptEventInfo(info)
 
             return data
         }
@@ -92,6 +98,9 @@ class GenerateSyntax {
             }
             if (syntaxInfoClass.isAnnotationPresent(RequiredPlugins::class.java))
                 data.requiredPlugins = syntaxInfoClass.getAnnotation(RequiredPlugins::class.java).value
+
+            data.entries = getEntiresFromSkriptElementInfo(info)
+
             return data
         }
 
@@ -131,7 +140,7 @@ class GenerateSyntax {
                 data.id = data.id + data.name?.replace(" ", "")
             }
             data.description = removeHTML(info.description as? Array<String>)
-            data.examples = cleanExamples(info.examples)
+            data.examples = cleanExamples(info.examples as? Array<String>)
             data.usage = removeHTML(info.usage as? Array<String>)
             val sinceString = removeHTML(info.since)
             if (sinceString != null){
@@ -143,7 +152,7 @@ class GenerateSyntax {
                 data.patterns = Array (size) { _ -> "" }
                 var x = 0
                 for (p in info.userInputPatterns!!) {
-                    data.patterns!![x++] = p.pattern()
+                    data.patterns!![x++] = p!!.pattern()
                             .replace("\\((.+?)\\)\\?".toRegex(), "[$1]")
                             .replace("(.)\\?".toRegex(), "[$1]")
                 }
@@ -158,7 +167,7 @@ class GenerateSyntax {
             data.name = info.name
             data.id = "function_" + info.name
             data.description = removeHTML(info.description as? Array<String>)
-            data.examples = cleanExamples(info.examples)
+            data.examples = cleanExamples(info.examples as? Array<String>)
             val sb = StringBuilder()
             sb.append(info.name).append("(")
             if (info.parameters != null) {
@@ -184,6 +193,106 @@ class GenerateSyntax {
                     infoReturnType.docName
             }
             return data
+        }
+
+        private fun getEntiresFromSkriptElementInfo(info: SyntaxElementInfo<*>) : Array<DocumentationEntryNode>? {
+            // See if the class has a SectionValidator and try to pull that out to use as the source of truth.
+            val fields = info.elementClass.declaredFields;
+            for (field in fields) {
+                if (field.type.isAssignableFrom(SectionValidator::class.java)) {
+                    try {
+                        // pull nodes out of sectionValidator
+                        field.isAccessible = true
+                        val sectionValidator : SectionValidator = field.get(null) as? SectionValidator ?: break
+                        val nodesField: Field = sectionValidator.javaClass.getDeclaredField("nodes")
+                        nodesField.isAccessible = true
+                        val entryNodes = nodesField[sectionValidator] as HashMap<String?, Any?>
+
+                        // Build up entriesArray
+                        val entriesArray : MutableList<DocumentationEntryNode> = mutableListOf()
+                        for ((name, node) in entryNodes) {
+
+                            if (name == null) {
+                                continue;
+                            }
+
+                            var isSection: Boolean
+                            var isRequired: Boolean
+
+                            // See if its optional
+                            var field: Field = node!!.javaClass.getDeclaredField("optional")
+                            field.isAccessible = true
+                            isRequired = !(field[node] as? Boolean)!!
+
+                            // See if this is a section
+                            field = node.javaClass.getDeclaredField("v")
+                            field.isAccessible = true
+                            val nodeValidator = field[node] as NodeValidator
+                            isSection = nodeValidator is SectionValidator
+
+                            entriesArray.add(DocumentationEntryNode(name, isRequired, isSection))
+                        }
+
+                        // Only use the first SectionValidator we find.
+                        return entriesArray.toTypedArray()
+                    } catch (ex: Exception) {
+                        ex.printStackTrace();
+                        return null;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private fun getEntiresFromSkriptEventInfo(info: SkriptEventInfo<*>) : Array<DocumentationEntryNode>? {
+            // See if the class has a SectionValidator and try to pull that out to use as the source of truth.
+            val fields = info.elementClass.declaredFields;
+            for (field in fields) {
+                if (field.type.isAssignableFrom(SectionValidator::class.java)) {
+                    try {
+                        // pull nodes out of sectionValidator
+                        field.isAccessible = true
+                        val sectionValidator : SectionValidator = field.get(null) as? SectionValidator ?: break
+                        val nodesField: Field = sectionValidator.javaClass.getDeclaredField("nodes")
+                        nodesField.isAccessible = true
+                        val entryNodes = nodesField[sectionValidator] as HashMap<String?, Any?>
+
+                        // Build up entriesArray
+                        val entriesArray : MutableList<DocumentationEntryNode> = mutableListOf()
+                        for ((name, node) in entryNodes) {
+
+                            if (name == null) {
+                                continue;
+                            }
+
+                            var isSection: Boolean
+                            var isRequired: Boolean
+
+                            // See if its optional
+                            var field: Field = node!!.javaClass.getDeclaredField("optional")
+                            field.isAccessible = true
+                            isRequired = !(field[node] as? Boolean)!!
+
+                            // See if this is a section
+                            field = node.javaClass.getDeclaredField("v")
+                            field.isAccessible = true
+                            val nodeValidator = field[node] as NodeValidator
+                            isSection = nodeValidator is SectionValidator
+
+                            entriesArray.add(DocumentationEntryNode(name, isRequired, isSection))
+                        }
+
+                        // Only use the first SectionValidator we find.
+                        return entriesArray.toTypedArray()
+                    } catch (ex: Exception) {
+                        ex.printStackTrace();
+                        return null;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private fun cleanupSyntaxPattern(patterns: Array<String>): Array<String>{
@@ -235,8 +344,7 @@ class GenerateSyntax {
             if(string.isNullOrEmpty()){
                 return string
             }
-            return string?.replace("""<.+?>(.+?)</.+?>""".toRegex(), "$1")
+            return string.replace("""<.+?>(.+?)</.+?>""".toRegex(), "$1")
         }
-
     }
 }

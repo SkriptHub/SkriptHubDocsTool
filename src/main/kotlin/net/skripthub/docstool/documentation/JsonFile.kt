@@ -2,9 +2,11 @@ package net.skripthub.docstool.documentation
 
 import com.google.gson.*
 import net.skripthub.docstool.modals.AddonData
+import net.skripthub.docstool.modals.DocumentationEntryNode
 import net.skripthub.docstool.modals.SyntaxData
 import java.io.BufferedWriter
 import java.io.IOException
+import java.util.*
 
 
 /**
@@ -30,6 +32,7 @@ class JsonFile(raw: Boolean) : FileType("json") {
         addSection(json, "expressions", addon.expressions)
         addSection(json, "types", addon.types)
         addSection(json, "functions", addon.functions)
+        addSection(json, "sections", addon.sections)
         gson.toJson(json, writer)
     }
 
@@ -47,17 +50,21 @@ class JsonFile(raw: Boolean) : FileType("json") {
     fun getJsonSyntax(info: SyntaxData): JsonObject {
         val syntax = JsonObject()
         for (entry in info.toMap().entries) {
-            val property = entry.key.toLowerCase().replace('_', ' ')
-            if (entry.value is String)
-                syntax.addProperty(property, entry.value as String)
-            else if (entry.value is Boolean)
-                syntax.addProperty(property, entry.value as Boolean)
-            else {
-                val json = JsonArray()
-                for (str in entry.value as Array<String>) {
-                    json.add(JsonPrimitive(str))
+            val property = entry.key.lowercase(Locale.getDefault()).replace('_', ' ')
+            when (entry.value) {
+                is String -> syntax.addProperty(property, entry.value as String)
+                is Boolean -> syntax.addProperty(property, entry.value as Boolean)
+                else -> {
+                    val json = JsonArray()
+                    for (arrayValue in entry.value as Array<*>) {
+                        if (arrayValue is String) {
+                            json.add(JsonPrimitive(arrayValue))
+                        } else if (arrayValue is DocumentationEntryNode) {
+                            json.add(arrayValue.getJsonElement())
+                        }
+                    }
+                    syntax.add(property, json)
                 }
-                syntax.add(property, json)
             }
         }
         return syntax

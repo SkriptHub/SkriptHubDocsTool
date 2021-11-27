@@ -1,8 +1,5 @@
 package net.skripthub.docstool.modals
 
-import java.util.*
-
-
 data class SyntaxData(var id: String? = null,
                       var name: String? = null,
                       var since: Array<String>? = null,
@@ -14,7 +11,8 @@ data class SyntaxData(var id: String? = null,
                       var usage: Array<String>? = null,
                       var changers: Array<String>? = null,
                       var eventValues: Array<String>? = null,
-                      var cancellable: Boolean? = null
+                      var cancellable: Boolean? = null,
+                      var entries: Array<DocumentationEntryNode>? = null,
                       ) {
     fun toMap(): Map<String, Any> {
         val map = LinkedHashMap<String, Any>()
@@ -48,7 +46,16 @@ data class SyntaxData(var id: String? = null,
         if (requiredPlugins != null){
             addArray(map, "Required Plugins", requiredPlugins!!)
         }
+        if (entries != null){
+            addArray(map, "Entries", entries!!)
+        }
         return map
+    }
+
+    private fun addArray(map: LinkedHashMap<String, Any>, property: String, array: Array<DocumentationEntryNode>) {
+        if (array.isEmpty())
+            return
+        map[property] = array
     }
 
     private fun addProperty(map: MutableMap<String, Any>, property: String, vararg value: String) {
@@ -56,7 +63,7 @@ data class SyntaxData(var id: String? = null,
             return
         val sb = StringBuilder()
         for (str in value) {
-            if (str != null && !str.isEmpty()) {
+            if (str.isNotEmpty()) {
                 if (sb.isNotEmpty())
                     sb.append("\n")
                 sb.append(str)

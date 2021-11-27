@@ -73,13 +73,13 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
                         GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo))
             }
         }
-        //Expressions
+        // Expressions
         val types = arrayOfNulls<Class<*>>(Classes.getClassInfos().size)
         var x = 0
         for (info in Classes.getClassInfos())
             types[x++] = info.c
-        //A LogHandler for expressions since it catch the changers, which can throw errors in console
-        //such as "Expression X can only be used in event Y"
+        // A LogHandler for expressions since it catch the changers, which can throw errors in console
+        // such as "Expression X can only be used in event Y"
         val log = SkriptLogger.startParseLogHandler()
         Skript.getExpressions().forEachRemaining { info ->
             val addonExpressions = getAddon(info)?.expressions
@@ -104,7 +104,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         val functions = ReflectionUtils.invokeMethod<Collection<JavaFunction<*>>>(Functions::class.java, "getJavaFunctions", null)
         if (functions != null) {
             for (info in functions) {
-                //For now only Skript uses this
+                // For now only Skript uses this
                 val addonFunctions = getAddon(info.javaClass)?.functions
                 if (addonFunctions != null) {
                     addSyntax(addonFunctions, GenerateSyntax.generateSyntaxFromFunctionInfo(info))
@@ -112,7 +112,16 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             }
         }
 
-        //Error Check Each Addon! (No id collisions)
+        // Sections
+        for (syntaxElementInfo in Skript.getSections()) {
+            val addonSections = getAddon(syntaxElementInfo)?.sections
+            if (addonSections != null) {
+                addSyntax(addonSections,
+                        GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo))
+            }
+        }
+
+        // Error Check Each Addon! (No id collisions)
         for (addon in addonMap.keys){
             val addonInfo = addonMap[addon] ?: continue
             val idSet : MutableSet<String> = mutableSetOf()
@@ -123,10 +132,11 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             attemptIDMerge(addonInfo.expressions, idCollisionTest(idSet, addonInfo.expressions, addon))
             attemptIDMerge(addonInfo.types, idCollisionTest(idSet, addonInfo.types, addon))
             attemptIDMerge(addonInfo.functions, idCollisionTest(idSet, addonInfo.functions, addon))
+            attemptIDMerge(addonInfo.sections, idCollisionTest(idSet, addonInfo.sections, addon))
         }
 
-        //Write to JSON
-        //Before, lets delete old files...
+        // Write to JSON
+        // Before, lets delete old files...
         val docsDir = File(instance.dataFolder, "documentation/")
         if (docsDir.exists()) {
             val files = docsDir.listFiles()
@@ -135,7 +145,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
                     f.delete()
         } else
             docsDir.mkdirs()
-        //Done, now let's write them all into files
+        // Done, now let's write them all into files
         for (addon in addonMap.values) {
             addon.sortLists()
             val file = File(docsDir, addon.name + "." + fileType.extension)
@@ -273,8 +283,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             name = skriptEventInfo.originClassPath
         }
 
-
-        //If null, bail and throw error
+        // If null, bail and throw error
         return addonMap.entries
                 .firstOrNull { name.startsWith(it.key) }
                 ?.value
@@ -282,10 +291,9 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
 
     private fun getAddon(c: Class<*>): AddonData? {
         val name = c.`package`.name
-        //If null, bail and throw error
+        // If null, bail and throw error
         return addonMap.entries
                 .firstOrNull { name.startsWith(it.key) }
                 ?.value
     }
-
 }

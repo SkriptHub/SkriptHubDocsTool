@@ -11,8 +11,8 @@ import org.bukkit.command.CommandSender
 
 class GenerateDocsCommand : CommandExecutor {
 
-    override fun onCommand(sender: CommandSender?, command: Command?, label: String?, args: Array<out String>?): Boolean {
-        sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+    override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
+        sender.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
                 + ChatColor.RESET + "] " + ChatColor.LIGHT_PURPLE + "Generating Docs")
 
         BuildDocs(Core.plugin!!, sender).load()
