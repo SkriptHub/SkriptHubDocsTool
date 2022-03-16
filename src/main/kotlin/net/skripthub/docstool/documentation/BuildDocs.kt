@@ -285,15 +285,31 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
 
         // If null, bail and throw error
         return addonMap.entries
-                .firstOrNull { name.startsWith(it.key) }
-                ?.value
+                .firstOrNull {
+                    var key = it.key
+                    while (key.contains('.')) {
+                        if (name.startsWith(key))
+                            return@firstOrNull true
+                        key = key.substring(0, key.lastIndexOf('.'))
+                    }
+                    return@firstOrNull false
+                }
+            ?.value
     }
 
     private fun getAddon(c: Class<*>): AddonData? {
         val name = c.`package`.name
         // If null, bail and throw error
         return addonMap.entries
-                .firstOrNull { name.startsWith(it.key) }
+                .firstOrNull {
+                    var key = it.key
+                    while (key.contains('.')) {
+                        if (name.startsWith(key))
+                            return@firstOrNull true
+                        key = key.substring(0, key.lastIndexOf('.'))
+                    }
+                    return@firstOrNull false
+                }
                 ?.value
     }
 }
