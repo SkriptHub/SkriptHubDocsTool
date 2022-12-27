@@ -35,7 +35,6 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         Bukkit.getScheduler().runTaskLaterAsynchronously(instance, this, 10L)
     }
 
-
     override fun run() {
         if (Skript.isAcceptRegistrations())
             return
@@ -50,7 +49,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             // TODO Throw error when null
             if (addonEvents != null) {
                 addSyntax(addonEvents,
-                        GenerateSyntax.generateSyntaxFromEvent(eventInfoClass, getter))
+                        GenerateSyntax.generateSyntaxFromEvent(eventInfoClass, getter, sender))
             }
         }
         // Conditions
@@ -62,7 +61,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             val addonConditions = getAddon(syntaxElementInfo)?.conditions
             if (addonConditions != null) {
                 addSyntax(addonConditions,
-                        GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo))
+                        GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
             }
         }
         // Effects
@@ -70,7 +69,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             val addonEffects = getAddon(syntaxElementInfo)?.effects
             if (addonEffects != null) {
                 addSyntax(addonEffects,
-                        GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo))
+                        GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
             }
         }
         // Expressions
@@ -85,7 +84,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             val addonExpressions = getAddon(info)?.expressions
             if(addonExpressions != null){
                 addSyntax(addonExpressions,
-                        GenerateSyntax.generateSyntaxFromExpression(info, types))
+                        GenerateSyntax.generateSyntaxFromExpression(info, types, sender))
             }
         }
         log.clear()
@@ -117,9 +116,18 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             val addonSections = getAddon(syntaxElementInfo)?.sections
             if (addonSections != null) {
                 addSyntax(addonSections,
-                        GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo))
+                        GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
             }
         }
+
+//        // Structures
+//        for (syntaxElementInfo in Skript.getStructures()) {
+//            val addonStructures = getAddon(syntaxElementInfo)?.structures
+//            if (addonStructures != null) {
+//                addSyntax(addonStructures,
+//                        GenerateSyntax.generateSyntaxFromStructureInfo(syntaxElementInfo))
+//            }
+//        }
 
         // Error Check Each Addon! (No id collisions)
         for (addon in addonMap.keys){
@@ -133,6 +141,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             attemptIDMerge(addonInfo.types, idCollisionTest(idSet, addonInfo.types, addon))
             attemptIDMerge(addonInfo.functions, idCollisionTest(idSet, addonInfo.functions, addon))
             attemptIDMerge(addonInfo.sections, idCollisionTest(idSet, addonInfo.sections, addon))
+            attemptIDMerge(addonInfo.structures, idCollisionTest(idSet, addonInfo.structures, addon))
         }
 
         // Write to JSON
@@ -154,9 +163,8 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
                 try {
                     file.createNewFile()
                 } catch (io: IOException) {
-
+                    // no-op
                 }
-
             }
             try {
                 BufferedWriter(OutputStreamWriter(FileOutputStream(file), "UTF-8")).use { writer -> fileType.write(writer, addon) }
@@ -256,10 +264,10 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         if(syntax == null){
             return
         }
-        if (syntax.name == null || syntax.name!!.isEmpty()) {
+        if (syntax.name.isNullOrEmpty()) {
             return
         }
-        if (syntax.patterns == null || syntax.patterns!!.isEmpty()) {
+        if (syntax.patterns.isNullOrEmpty()) {
             return
         }
         list.add(syntax)

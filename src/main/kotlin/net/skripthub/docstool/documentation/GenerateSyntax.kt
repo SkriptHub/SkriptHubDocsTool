@@ -14,15 +14,17 @@ import net.skripthub.docstool.modals.DocumentationEntryNode
 import net.skripthub.docstool.modals.SyntaxData
 import net.skripthub.docstool.utils.EventValuesGetter
 import net.skripthub.docstool.utils.ReflectionUtils
+import org.bukkit.ChatColor
+import org.bukkit.command.CommandSender
 import org.bukkit.event.Cancellable
+import org.skriptlang.skript.lang.structure.StructureInfo
 import java.lang.reflect.Field
 import java.util.*
 
-
 class GenerateSyntax {
     companion object {
-        fun generateSyntaxFromEvent(info: SkriptEventInfo<*>, getter: EventValuesGetter?) : SyntaxData? {
-            if(info.description != null && info.description!!.contentEquals(SkriptEventInfo.NO_DOC)){
+        fun generateSyntaxFromEvent(info: SkriptEventInfo<*>, getter: EventValuesGetter?, sender: CommandSender?) : SyntaxData? {
+            if (info.description != null && info.description!!.contentEquals(SkriptEventInfo.NO_DOC)) {
                 return null
             }
             val data = SyntaxData()
@@ -40,7 +42,7 @@ class GenerateSyntax {
             }
 
             val sinceString = removeHTML(info.since)
-            if (sinceString != null){
+            if (sinceString != null) {
                 data.since = arrayOf(sinceString)
             }
 
@@ -67,12 +69,12 @@ class GenerateSyntax {
                 data.eventValues = times.toTypedArray()
             }
 
-            data.entries = getEntiresFromSkriptEventInfo(info)
+            data.entries = getEntriesFromSkriptEventInfo(info, sender)
 
             return data
         }
 
-        fun generateSyntaxFromSyntaxElementInfo(info: SyntaxElementInfo<*>): SyntaxData? {
+        fun generateSyntaxFromSyntaxElementInfo(info: SyntaxElementInfo<*>, sender: CommandSender?): SyntaxData? {
             val data = SyntaxData()
             val syntaxInfoClass = info.c
             if (syntaxInfoClass.isAnnotationPresent(NoDoc::class.java))
@@ -99,13 +101,45 @@ class GenerateSyntax {
             if (syntaxInfoClass.isAnnotationPresent(RequiredPlugins::class.java))
                 data.requiredPlugins = syntaxInfoClass.getAnnotation(RequiredPlugins::class.java).value
 
-            data.entries = getEntiresFromSkriptElementInfo(info)
+            data.entries = getEntriesFromSkriptElementInfo(info, sender)
 
             return data
         }
 
-        fun generateSyntaxFromExpression(info: ExpressionInfo<*, *>, classes: Array<Class<*>?>): SyntaxData? {
-            val data = generateSyntaxFromSyntaxElementInfo(info) ?: return null
+        fun generateSyntaxFromStructureInfo(info: StructureInfo<*>): SyntaxData? {
+            val data = SyntaxData()
+            val syntaxInfoClass = info.c
+            if (syntaxInfoClass.isAnnotationPresent(NoDoc::class.java))
+                return null
+            if (syntaxInfoClass.isAnnotationPresent(Name::class.java))
+                data.name = syntaxInfoClass.getAnnotation(Name::class.java).value
+            if (data.name == null || data.name!!.isEmpty())
+                data.name = syntaxInfoClass.simpleName
+            data.id = syntaxInfoClass.simpleName
+            if (syntaxInfoClass.isAnnotationPresent(DocumentationId::class.java)){
+                data.id = syntaxInfoClass.getAnnotation(DocumentationId::class.java).value
+            }
+            if (syntaxInfoClass.isAnnotationPresent(Description::class.java))
+                data.description = removeHTML(syntaxInfoClass.getAnnotation(Description::class.java).value)
+            if (syntaxInfoClass.isAnnotationPresent(Examples::class.java))
+                data.examples = cleanExamples(syntaxInfoClass.getAnnotation(Examples::class.java).value)
+            data.patterns = cleanupSyntaxPattern(info.patterns)
+            if (syntaxInfoClass.isAnnotationPresent(Since::class.java)) {
+                val sinceString = removeHTML(syntaxInfoClass.getAnnotation(Since::class.java).value)
+                if (sinceString != null) {
+                    data.since = arrayOf(sinceString)
+                }
+            }
+            if (syntaxInfoClass.isAnnotationPresent(RequiredPlugins::class.java))
+                data.requiredPlugins = syntaxInfoClass.getAnnotation(RequiredPlugins::class.java).value
+
+            data.entries = getEntriesFromStructureInfo(info)
+
+            return data
+        }
+
+        fun generateSyntaxFromExpression(info: ExpressionInfo<*, *>, classes: Array<Class<*>?>, sender: CommandSender?): SyntaxData? {
+            val data = generateSyntaxFromSyntaxElementInfo(info, sender) ?: return null
             val ci = Classes.getSuperClassInfo(info.returnType)
             if (ci != null)
                 data.returnType = if (ci.docName == null || ci.docName!!.isEmpty()) ci.codeName else ci.docName
@@ -116,7 +150,7 @@ class GenerateSyntax {
             try {
                 for (mode in Changer.ChangeMode.values()) {
                     if (Changer.ChangerUtils.acceptsChange(expr, mode, *classes))
-                        array.add(mode.name.toLowerCase().replace('_', ' '))
+                        array.add(mode.name.lowercase().replace('_', ' '))
                 }
             } catch (e: Throwable) {
                 array.add("unknown")
@@ -195,9 +229,25 @@ class GenerateSyntax {
             return data
         }
 
-        private fun getEntiresFromSkriptElementInfo(info: SyntaxElementInfo<*>) : Array<DocumentationEntryNode>? {
+        private fun getEntriesFromSkriptElementInfo(info: SyntaxElementInfo<*>, sender: CommandSender?) : Array<DocumentationEntryNode>? {
             // See if the class has a SectionValidator and try to pull that out to use as the source of truth.
-            val fields = info.elementClass.declaredFields;
+            val elementClass = info.elementClass ?: return null
+            val fields: Array<Field>
+
+            try {
+                fields = elementClass.declaredFields;
+            } catch (ex: Exception) {
+                sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+                        + ChatColor.RESET + "] " + ChatColor.YELLOW + "Warning: Unable to access declared fields " +
+                        "for ${info.originClassPath} to find the SectionValidator.")
+
+                // TODO: Add an option to enabled the printStackTrace
+                // ex.printStackTrace();
+
+                ex.printStackTrace();
+                return null;
+            }
+
             for (field in fields) {
                 if (field.type.isAssignableFrom(SectionValidator::class.java)) {
                     try {
@@ -220,14 +270,14 @@ class GenerateSyntax {
                             var isRequired: Boolean
 
                             // See if its optional
-                            var field: Field = node!!.javaClass.getDeclaredField("optional")
-                            field.isAccessible = true
-                            isRequired = !(field[node] as? Boolean)!!
+                            val optionalField: Field = node!!.javaClass.getDeclaredField("optional")
+                            optionalField.isAccessible = true
+                            isRequired = !(optionalField[node] as? Boolean)!!
 
                             // See if this is a section
-                            field = node.javaClass.getDeclaredField("v")
-                            field.isAccessible = true
-                            val nodeValidator = field[node] as NodeValidator
+                            val sectionField = node.javaClass.getDeclaredField("v")
+                            sectionField.isAccessible = true
+                            val nodeValidator = sectionField[node] as NodeValidator
                             isSection = nodeValidator is SectionValidator
 
                             entriesArray.add(DocumentationEntryNode(name, isRequired, isSection))
@@ -236,7 +286,12 @@ class GenerateSyntax {
                         // Only use the first SectionValidator we find.
                         return entriesArray.toTypedArray()
                     } catch (ex: Exception) {
-                        ex.printStackTrace();
+                        sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+                                + ChatColor.RESET + "] " + ChatColor.YELLOW + "Warning: Unable to find the " +
+                                "SectionValidator for ${info.originClassPath}")
+
+                        // TODO: Add an option to enabled the printStackTrace
+                        // ex.printStackTrace();
                         return null;
                     }
                 }
@@ -245,9 +300,36 @@ class GenerateSyntax {
             return null;
         }
 
-        private fun getEntiresFromSkriptEventInfo(info: SkriptEventInfo<*>) : Array<DocumentationEntryNode>? {
+        private fun getEntriesFromStructureInfo(info: StructureInfo<*>) : Array<DocumentationEntryNode>? {
+            val entryValidator = info.entryValidator
+            val entriesArray : MutableList<DocumentationEntryNode> = mutableListOf()
+
+            if (entryValidator != null) {
+                for (entry in entryValidator.entryData) {
+                    entriesArray.add(DocumentationEntryNode(entry.key, entry.isOptional, entry.defaultValue.toString()))
+                }
+            }
+
+            return entriesArray.toTypedArray()
+        }
+
+        private fun getEntriesFromSkriptEventInfo(info: SkriptEventInfo<*>, sender: CommandSender?) : Array<DocumentationEntryNode>? {
             // See if the class has a SectionValidator and try to pull that out to use as the source of truth.
-            val fields = info.elementClass.declaredFields;
+            val elementClass = info.elementClass ?: return null;
+            val fields: Array<Field>
+
+            try {
+                fields = elementClass.declaredFields;
+            } catch (ex: Exception) {
+                sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+                        + ChatColor.RESET + "] " + ChatColor.YELLOW + "Warning: Unable to access declared fields " +
+                        "for ${info.name} <${info.id}> to find the SectionValidator.")
+
+                // TODO: Add an option to enabled the printStackTrace
+                // ex.printStackTrace();
+                return null;
+            }
+
             for (field in fields) {
                 if (field.type.isAssignableFrom(SectionValidator::class.java)) {
                     try {
@@ -270,14 +352,14 @@ class GenerateSyntax {
                             var isRequired: Boolean
 
                             // See if its optional
-                            var field: Field = node!!.javaClass.getDeclaredField("optional")
-                            field.isAccessible = true
-                            isRequired = !(field[node] as? Boolean)!!
+                            val optionalField: Field = node!!.javaClass.getDeclaredField("optional")
+                            optionalField.isAccessible = true
+                            isRequired = !(optionalField[node] as? Boolean)!!
 
                             // See if this is a section
-                            field = node.javaClass.getDeclaredField("v")
-                            field.isAccessible = true
-                            val nodeValidator = field[node] as NodeValidator
+                            val sectionField = node.javaClass.getDeclaredField("v")
+                            sectionField.isAccessible = true
+                            val nodeValidator = sectionField[node] as NodeValidator
                             isSection = nodeValidator is SectionValidator
 
                             entriesArray.add(DocumentationEntryNode(name, isRequired, isSection))
@@ -286,7 +368,11 @@ class GenerateSyntax {
                         // Only use the first SectionValidator we find.
                         return entriesArray.toTypedArray()
                     } catch (ex: Exception) {
-                        ex.printStackTrace();
+                        sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+                                + ChatColor.RESET + "] " + ChatColor.YELLOW + "Warning: Unable to find the " +
+                                "SectionValidator for ${info.name} <${info.id}>")
+                        // TODO: Add an option to enabled the printStackTrace
+                        // ex.printStackTrace();
                         return null;
                     }
                 }
@@ -299,7 +385,7 @@ class GenerateSyntax {
             if(patterns.isEmpty()){
                 return patterns
             }
-            for (i in 0 until patterns.size){
+            for (i in patterns.indices){
                 patterns[i] = patterns[i]
                         .replace("""\\([()])""".toRegex(), "$1")
                         .replace("""-?\d+¦""".toRegex(), "")
@@ -321,17 +407,17 @@ class GenerateSyntax {
         }
 
         private fun removeHTML(description: Array<String>?): Array<String>{
-            if(description == null || description.isEmpty()){
+            if(description.isNullOrEmpty()){
                 return emptyArray()
             }
-            for (i in 0 until description.size){
+            for (i in description.indices){
                 description[i] = this.removeHTML(description[i])!!
             }
             return description
         }
 
         private fun cleanExamples(examples: Array<String>?): Array<String>?{
-            if (examples == null || examples.isEmpty()){
+            if (examples.isNullOrEmpty()){
                 return examples
             }
             if (examples.size == 1 && examples[0].isEmpty()){

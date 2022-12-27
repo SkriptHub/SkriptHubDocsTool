@@ -36,7 +36,7 @@ class JsonFile(raw: Boolean) : FileType("json") {
         gson.toJson(json, writer)
     }
 
-    fun addSection(json: JsonObject, property: String, list: MutableList<SyntaxData>) {
+    private fun addSection(json: JsonObject, property: String, list: MutableList<SyntaxData>) {
         val array = JsonArray()
         for (syntax in list) {
             val jsonSyntax = getJsonSyntax(syntax)
@@ -47,7 +47,7 @@ class JsonFile(raw: Boolean) : FileType("json") {
             json.add(property, array)
     }
 
-    fun getJsonSyntax(info: SyntaxData): JsonObject {
+    private fun getJsonSyntax(info: SyntaxData): JsonObject {
         val syntax = JsonObject()
         for (entry in info.toMap().entries) {
             val property = entry.key.lowercase(Locale.getDefault()).replace('_', ' ')

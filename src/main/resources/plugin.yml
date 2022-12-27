@@ -1,11 +1,11 @@
 main: net.skripthub.docstool.Core
 name: SkriptHubDocsTool
-description: An tool for addon devs of Skript to easily generate docs for their addon.
+description: A tool for addon devs of Skript to easily generate docs for their addon.
 author: eyesniper2
 website: https://skripthub.net/
 depend: [Skript]
 prefix: Skript Hub Docs Tool
-version: 1.3
+version: 1.5
 
 permissions:
   docstool.command.gendocs:
@@ -14,7 +14,7 @@ permissions:
 
 commands:
    gendocs:
-      description: Generate documenation based on installed plugins.
+      description: Generate documentation based on installed plugins.
       aliases: [builddocs, gendocs, gend, generatedocs, generatedocumentation]
       usage: /gendocs
       permission: docstool.command.gendocs
