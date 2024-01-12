@@ -284,7 +284,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
 
     private fun getAddon(skriptEventInfo: SyntaxElementInfo<*>): AddonData? {
 
-        var name = skriptEventInfo.c.`package`.name
+        var name = skriptEventInfo.getElementClass().`package`.name
 
         if (name == "ch.njol.skript.lang.util"){
             // Used Simple event or expression registration

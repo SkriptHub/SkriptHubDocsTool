@@ -76,7 +76,7 @@ class GenerateSyntax {
 
         fun generateSyntaxFromSyntaxElementInfo(info: SyntaxElementInfo<*>, sender: CommandSender?): SyntaxData? {
             val data = SyntaxData()
-            val syntaxInfoClass = info.c
+            val syntaxInfoClass = info.getElementClass()
             if (syntaxInfoClass.isAnnotationPresent(NoDoc::class.java))
                 return null
             if (syntaxInfoClass.isAnnotationPresent(Name::class.java))
@@ -108,7 +108,7 @@ class GenerateSyntax {
 
         fun generateSyntaxFromStructureInfo(info: StructureInfo<*>): SyntaxData? {
             val data = SyntaxData()
-            val syntaxInfoClass = info.c
+            val syntaxInfoClass = info.getElementClass()
             if (syntaxInfoClass.isAnnotationPresent(NoDoc::class.java))
                 return null
             if (syntaxInfoClass.isAnnotationPresent(Name::class.java))
@@ -146,7 +146,7 @@ class GenerateSyntax {
             else
                 data.returnType = "Object"
             val array = ArrayList<String>()
-            val expr = ReflectionUtils.newInstance(info.c)
+            val expr = ReflectionUtils.newInstance(info.getElementClass())
             try {
                 for (mode in Changer.ChangeMode.values()) {
                     if (Changer.ChangerUtils.acceptsChange(expr, mode, *classes))
