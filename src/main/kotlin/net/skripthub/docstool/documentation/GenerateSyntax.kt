@@ -231,7 +231,7 @@ class GenerateSyntax {
 
         private fun getEntriesFromSkriptElementInfo(info: SyntaxElementInfo<*>, sender: CommandSender?) : Array<DocumentationEntryNode>? {
             // See if the class has a SectionValidator and try to pull that out to use as the source of truth.
-            val elementClass = info.elementClass ?: return null
+            val elementClass = info.getElementClass() ?: return null
             val fields: Array<Field>
 
             try {
@@ -315,7 +315,7 @@ class GenerateSyntax {
 
         private fun getEntriesFromSkriptEventInfo(info: SkriptEventInfo<*>, sender: CommandSender?) : Array<DocumentationEntryNode>? {
             // See if the class has a SectionValidator and try to pull that out to use as the source of truth.
-            val elementClass = info.elementClass ?: return null;
+            val elementClass = info.getElementClass() ?: return null;
             val fields: Array<Field>
 
             try {
