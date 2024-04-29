@@ -4,15 +4,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import org.bukkit.Bukkit;
-
 /**
  * Just a simple reflection class, just to not depend on Skript 2.2+ (I think it is the only thing I use from it)
  * @author Tuke_Nuke
  */
 public class ReflectionUtils {
-
-    public static final String packageVersion = Bukkit.getServer().getClass().getPackage().getName().split(".v")[1];
 
     /**
      * Check if a class exists.
