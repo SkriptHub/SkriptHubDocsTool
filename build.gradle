@@ -40,6 +40,7 @@ repositories {
     maven { url 'https://papermc.io/repo/repository/maven-public/' }
     maven { url 'https://repo.skriptlang.org/releases' }
     maven { url 'https://jitpack.io' }
+    maven { url 'https://repo.skriptlang.org/releases' }
 }
 
 dependencies {
