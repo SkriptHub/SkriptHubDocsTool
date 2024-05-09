@@ -2,6 +2,7 @@ package net.skripthub.docstool.documentation
 
 import com.google.gson.*
 import net.skripthub.docstool.modals.AddonData
+import net.skripthub.docstool.modals.AddonMetadata
 import net.skripthub.docstool.modals.DocumentationEntryNode
 import net.skripthub.docstool.modals.SyntaxData
 import java.io.BufferedWriter
@@ -26,6 +27,7 @@ class JsonFile(raw: Boolean) : FileType("json") {
     @Throws(IOException::class)
     override fun write(writer: BufferedWriter, addon: AddonData) {
         val json = JsonObject()
+        addMetadata(json, addon.metadata)
         addSection(json, "events", addon.events)
         addSection(json, "conditions", addon.conditions)
         addSection(json, "effects", addon.effects)
@@ -33,6 +35,7 @@ class JsonFile(raw: Boolean) : FileType("json") {
         addSection(json, "types", addon.types)
         addSection(json, "functions", addon.functions)
         addSection(json, "sections", addon.sections)
+        addSection(json, "structures", addon.structures)
         gson.toJson(json, writer)
     }
 
@@ -68,6 +71,11 @@ class JsonFile(raw: Boolean) : FileType("json") {
             }
         }
         return syntax
+    }
+
+    private fun addMetadata(json: JsonObject, metadata: AddonMetadata)
+    {
+        json.add("metadata", metadata.getJsonElement())
     }
 }
 

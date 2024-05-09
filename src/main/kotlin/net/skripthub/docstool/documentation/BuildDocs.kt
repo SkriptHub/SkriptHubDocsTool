@@ -14,6 +14,7 @@ import java.util.*
 import ch.njol.skript.log.SkriptLogger
 import ch.njol.skript.registrations.Classes
 import ch.njol.skript.lang.function.JavaFunction
+import net.skripthub.docstool.modals.AddonMetadata
 import net.skripthub.docstool.utils.ReflectionUtils
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
@@ -38,9 +39,12 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
     override fun run() {
         if (Skript.isAcceptRegistrations())
             return
-        addonMap[Skript::class.java.`package`.name] = AddonData("Skript")
+        addonMap[Skript::class.java.`package`.name] = AddonData(
+                "Skript", AddonMetadata(Skript.getVersion().toString()))
         for (addon in Skript.getAddons())
-            addonMap[addon.plugin.javaClass.`package`.name] = AddonData(addon.name)
+            addonMap[addon.plugin.javaClass.`package`.name] = AddonData(
+                    addon.name, AddonMetadata(addon.version.toString()))
+
         // Events
         val getter = EventValuesGetter()
         for (eventInfoClassUnsafe in Skript.getEvents()){
@@ -49,9 +53,10 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             // TODO Throw error when null
             if (addonEvents != null) {
                 addSyntax(addonEvents,
-                        GenerateSyntax.generateSyntaxFromEvent(eventInfoClass, getter, sender))
+                        GenerateSyntax.generateSyntaxFromEvent(eventInfoClass, getter))
             }
         }
+
         // Conditions
         for (syntaxElementInfo in Skript.getConditions()) {
 //            if (EffectSection::class.java!!.isAssignableFrom(info.c))
@@ -64,6 +69,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
                         GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
             }
         }
+
         // Effects
         for (syntaxElementInfo in Skript.getEffects()) {
             val addonEffects = getAddon(syntaxElementInfo)?.effects
@@ -72,6 +78,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
                         GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
             }
         }
+
         // Expressions
         val types = arrayOfNulls<Class<*>>(Classes.getClassInfos().size)
         var x = 0
@@ -120,14 +127,14 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             }
         }
 
-//        // Structures
-//        for (syntaxElementInfo in Skript.getStructures()) {
-//            val addonStructures = getAddon(syntaxElementInfo)?.structures
-//            if (addonStructures != null) {
-//                addSyntax(addonStructures,
-//                        GenerateSyntax.generateSyntaxFromStructureInfo(syntaxElementInfo))
-//            }
-//        }
+        // Structures
+        for (syntaxElementInfo in Skript.getStructures()) {
+            val addonStructures = getAddon(syntaxElementInfo)?.structures
+            if (addonStructures != null) {
+                addSyntax(addonStructures,
+                        GenerateSyntax.generateSyntaxFromStructureInfo(syntaxElementInfo))
+            }
+        }
 
         // Error Check Each Addon! (No id collisions)
         for (addon in addonMap.keys){
@@ -285,11 +292,24 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
     private fun getAddon(skriptEventInfo: SyntaxElementInfo<*>): AddonData? {
 
         var name = skriptEventInfo.getElementClass().`package`.name
+//        var testName = skriptEventInfo.getElementClass().packageName
 
         if (name == "ch.njol.skript.lang.util"){
             // Used Simple event or expression registration
             name = skriptEventInfo.originClassPath
         }
+
+        // DEBUG
+//        sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+//                + ChatColor.RESET + "] " + ChatColor.YELLOW + "Calced Package Name: " + ChatColor.BLUE + "$name")
+//        val originClassPathName = skriptEventInfo.originClassPath
+//        sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+//                + ChatColor.RESET + "] " + ChatColor.YELLOW + "originClassPath: " + ChatColor.GREEN + "$originClassPathName")
+//        sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+//                + ChatColor.RESET + "] " + ChatColor.YELLOW + "Test Package Name: " + ChatColor.GREEN + "$testName")
+//        val patterntest = skriptEventInfo.patterns[0]
+//        sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+//                + ChatColor.RESET + "] " + ChatColor.YELLOW + "First Pattern: " + ChatColor.LIGHT_PURPLE + "$patterntest")
 
         // If null, bail and throw error
         return addonMap.entries

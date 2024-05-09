@@ -19,7 +19,7 @@ buildscript {
 }
 
 group 'net.skripthub'
-version '1.6'
+version '1.7'
 
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'
@@ -43,7 +43,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.SkriptLang:Skript:2.8.0-pre2'
+    implementation 'com.github.SkriptLang:Skript:2.8.0'
 
     implementation group: 'org.spigotmc', name: 'spigot-api', version:'1.17-R0.1-SNAPSHOT'
 

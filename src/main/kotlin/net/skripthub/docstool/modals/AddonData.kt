@@ -1,6 +1,7 @@
 package net.skripthub.docstool.modals
 
 data class AddonData(var name: String,
+                     var metadata: AddonMetadata,
                      var events: MutableList<SyntaxData> = mutableListOf(),
                      var conditions: MutableList<SyntaxData> = mutableListOf(),
                      var effects: MutableList<SyntaxData> = mutableListOf(),
