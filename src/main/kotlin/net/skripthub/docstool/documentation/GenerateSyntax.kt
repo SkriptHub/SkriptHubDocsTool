@@ -171,6 +171,9 @@ class GenerateSyntax {
                 data.name = info.codeName
             }
             data.id = info.c.simpleName
+            if (info.documentationID != null) {
+                data.id = info.documentationID;
+            }
             if (data.id.equals("Type")) {
                 data.id = data.id + data.name?.replace(" ", "")
             }
