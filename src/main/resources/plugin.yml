@@ -5,7 +5,8 @@ author: eyesniper2
 website: https://skripthub.net/
 depend: [Skript]
 prefix: Skript Hub Docs Tool
-version: 1.7
+version: @version@
+api-version: '1.17'
 
 permissions:
   docstool.command.gendocs:

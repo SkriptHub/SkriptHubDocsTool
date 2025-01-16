@@ -17,6 +17,7 @@ import org.bukkit.command.CommandSender
 import org.bukkit.event.Cancellable
 import org.skriptlang.skript.lang.entry.EntryValidator
 import org.skriptlang.skript.lang.entry.SectionEntryData
+import org.skriptlang.skript.lang.entry.util.TriggerEntryData
 import org.skriptlang.skript.lang.structure.StructureInfo
 import java.lang.reflect.Field
 
@@ -35,7 +36,7 @@ class GenerateSyntax {
             data.description = cleanDescription(info.description as? Array<String>)
             data.examples = cleanExamples(info.examples as Array<String>?)
             data.patterns = cleanupSyntaxPattern(info.patterns)
-            if (data.patterns != null && data.name != null && data.name!!.startsWith("On ")) {
+            if (data.name != null && data.name!!.startsWith("On ")) {
                 for (x in 0 until data.patterns!!.size)
                     data.patterns!![x] = "[on] " + data.patterns!![x]
             }
@@ -94,10 +95,7 @@ class GenerateSyntax {
                 data.examples = cleanExamples(syntaxInfoClass.getAnnotation(Examples::class.java).value)
             data.patterns = cleanupSyntaxPattern(info.patterns)
             if (syntaxInfoClass.isAnnotationPresent(Since::class.java)) {
-                val sinceString = removeHTML(syntaxInfoClass.getAnnotation(Since::class.java).value)
-                if (sinceString != null) {
-                    data.since = arrayOf(sinceString)
-                }
+                data.since = removeHTML(syntaxInfoClass.getAnnotation(Since::class.java).value)
             }
             if (syntaxInfoClass.isAnnotationPresent(RequiredPlugins::class.java))
                 data.requiredPlugins = syntaxInfoClass.getAnnotation(RequiredPlugins::class.java).value
@@ -126,10 +124,7 @@ class GenerateSyntax {
                 data.examples = cleanExamples(syntaxInfoClass.getAnnotation(Examples::class.java).value)
             data.patterns = cleanupSyntaxPattern(info.patterns)
             if (syntaxInfoClass.isAnnotationPresent(Since::class.java)) {
-                val sinceString = removeHTML(syntaxInfoClass.getAnnotation(Since::class.java).value)
-                if (sinceString != null) {
-                    data.since = arrayOf(sinceString)
-                }
+                data.since = removeHTML(syntaxInfoClass.getAnnotation(Since::class.java).value)
             }
             if (syntaxInfoClass.isAnnotationPresent(RequiredPlugins::class.java))
                 data.requiredPlugins = syntaxInfoClass.getAnnotation(RequiredPlugins::class.java).value
@@ -171,12 +166,13 @@ class GenerateSyntax {
                 data.name = info.codeName
             }
             data.id = info.c.simpleName
+            if (data.id.equals("Type")) {
+                data.id += data.name?.replace(" ", "")
+            }
             if (info.documentationID != null) {
                 data.id = info.documentationID;
             }
-            if (data.id.equals("Type")) {
-                data.id = data.id + data.name?.replace(" ", "")
-            }
+
             data.description = cleanDescription(info.description as? Array<String>)
             data.examples = cleanExamples(info.examples as? Array<String>)
             data.usage = cleanUsages(info.usage as? Array<String>)
@@ -286,7 +282,7 @@ class GenerateSyntax {
                         entriesArray.add(DocumentationEntryNode(
                                 entry.key,
                                 !entry.isOptional,
-                                entry is SectionEntryData,
+                                entry is SectionEntryData || entry is TriggerEntryData,
                                 entry.defaultValue.toString()))
                     }
 
