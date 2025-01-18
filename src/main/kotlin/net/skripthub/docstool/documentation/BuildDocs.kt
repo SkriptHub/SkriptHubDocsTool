@@ -28,7 +28,16 @@ import kotlin.collections.ArrayList
 
 class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSender?) : Runnable{
 
-    var addonMap: HashMap<String, AddonData> = hashMapOf()
+    private var addonMap: HashMap<String, AddonData> = hashMapOf()
+
+    // Skript has multiple internal class packages such as ch.njol.skript and org.skriptlang.skript.
+    // Since we base the package mapping based off of the entry class, which for Skript lives in the
+    // ch.njol.skript package, we don't and can't know about org.skriptlang.skript.
+    // addonPackageMap is a hard coded map of known internal packages so we are always mapping back
+    // to the right addon.
+    private var addonPackageMap: HashMap<String, String> = hashMapOf(
+        "org.skriptlang.skript" to "ch.njol.skript"
+    )
 
     private val fileType: FileType = JsonFile(false)
 
@@ -292,11 +301,17 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
     private fun getAddon(skriptEventInfo: SyntaxElementInfo<*>): AddonData? {
 
         var name = skriptEventInfo.getElementClass().`package`.name
-//        var testName = skriptEventInfo.getElementClass().packageName
+        // var testName = skriptEventInfo.getElementClass().packageName
 
         if (name == "ch.njol.skript.lang.util"){
             // Used Simple event or expression registration
             name = skriptEventInfo.originClassPath
+        }
+
+        // Check to see if we need to remap the package to the addon root package.
+        val mappedPackageNode = addonPackageMap.entries.firstOrNull { name.startsWith(it.key) }
+        if (mappedPackageNode != null){
+            name = mappedPackageNode.value
         }
 
         // DEBUG
