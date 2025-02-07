@@ -8,6 +8,7 @@ import ch.njol.skript.lang.SkriptEventInfo
 import ch.njol.skript.lang.SyntaxElementInfo
 import ch.njol.skript.lang.function.JavaFunction
 import ch.njol.skript.registrations.Classes
+import ch.njol.skript.util.Utils
 import net.skripthub.docstool.modals.DocumentationEntryNode
 import net.skripthub.docstool.modals.SyntaxData
 import net.skripthub.docstool.utils.EventValuesGetter
@@ -23,6 +24,13 @@ import java.lang.reflect.Field
 
 class GenerateSyntax {
     companion object {
+
+        data class CodeNameData(val isArray:Boolean, val codeName:String) {
+            override fun toString(): String {
+                return Utils.toEnglishPlural(codeName, isArray)
+            }
+        }
+
         fun generateSyntaxFromEvent(info: SkriptEventInfo<*>, getter: EventValuesGetter?) : SyntaxData? {
             if (info.description != null && info.description!!.contentEquals(SkriptEventInfo.NO_DOC)) {
                 return null
@@ -64,8 +72,8 @@ class GenerateSyntax {
                 val times = ArrayList<String>()
                 for (x in classes.indices)
                     (0 until classes[x].size)
-                            .mapNotNull { Classes.getSuperClassInfo(classes[x][it]) }
-                            .mapTo(times) { time[x] + it.codeName }
+                            .mapNotNull { grabCodeName(classes[x][it]) }
+                            .mapTo(times) { time[x] + it }
                 // Sort the event values alphabetically to prevent update churn
                 times.sortBy { it }
                 data.eventValues = times.toTypedArray()
@@ -74,6 +82,17 @@ class GenerateSyntax {
             data.entries = getEntriesFromSkriptEventInfo(info)
 
             return data
+        }
+
+        private fun grabCodeName(classObj: Class<*>) : CodeNameData? {
+            val expectedClass: Class<*> = if (classObj.isArray) classObj.componentType else classObj
+            var classInfo = Classes.getExactClassInfo(expectedClass)
+            if (classInfo == null) {
+                classInfo = Classes.getSuperClassInfo(expectedClass)
+            }
+            if (classInfo == null)
+                return null
+            return CodeNameData(classObj.isArray, classInfo.codeName)
         }
 
         fun generateSyntaxFromSyntaxElementInfo(info: SyntaxElementInfo<*>, sender: CommandSender?): SyntaxData? {
