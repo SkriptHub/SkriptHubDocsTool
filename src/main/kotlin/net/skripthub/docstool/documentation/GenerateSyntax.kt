@@ -110,8 +110,7 @@ class GenerateSyntax {
             }
             if (syntaxInfoClass.isAnnotationPresent(Description::class.java))
                 data.description = cleanDescription(syntaxInfoClass.getAnnotation(Description::class.java).value)
-            if (syntaxInfoClass.isAnnotationPresent(Examples::class.java))
-                data.examples = cleanExamples(syntaxInfoClass.getAnnotation(Examples::class.java).value)
+            data.examples = getCleanedExamplesFromClassInfo(syntaxInfoClass)
             data.patterns = cleanupSyntaxPattern(info.patterns)
             if (syntaxInfoClass.isAnnotationPresent(Since::class.java)) {
                 data.since = removeHTML(syntaxInfoClass.getAnnotation(Since::class.java).value)
@@ -139,8 +138,7 @@ class GenerateSyntax {
             }
             if (syntaxInfoClass.isAnnotationPresent(Description::class.java))
                 data.description = cleanDescription(syntaxInfoClass.getAnnotation(Description::class.java).value)
-            if (syntaxInfoClass.isAnnotationPresent(Examples::class.java))
-                data.examples = cleanExamples(syntaxInfoClass.getAnnotation(Examples::class.java).value)
+            data.examples = getCleanedExamplesFromClassInfo(syntaxInfoClass)
             data.patterns = cleanupSyntaxPattern(info.patterns)
             if (syntaxInfoClass.isAnnotationPresent(Since::class.java)) {
                 data.since = removeHTML(syntaxInfoClass.getAnnotation(Since::class.java).value)
@@ -387,6 +385,30 @@ class GenerateSyntax {
                 description[i] = this.removeHTML(description[i])!!
             }
             return description
+        }
+
+        private fun getCleanedExamplesFromClassInfo(syntaxInfoClass: Class<*>): Array<String>?{
+            // Skript does an if/else tree here that has no docs, I suspect some addon devs are going to mix and match
+            // these annotation by accident, lets make sure to capture everything.
+
+            // Example and Example.Examples annotations were added in 2.10.2
+            // Examples is the classic example annotation
+
+            val combinedExamples = ArrayList<String>()
+            if (syntaxInfoClass.isAnnotationPresent(Example::class.java)) {
+                combinedExamples.add(syntaxInfoClass.getAnnotation(Example::class.java).value)
+            }
+
+            if (syntaxInfoClass.isAnnotationPresent(Example.Examples::class.java)) {
+                val listOfExamples = syntaxInfoClass.getAnnotation(Example.Examples::class.java).value
+                listOfExamples.map { example -> combinedExamples.add(example.value) }
+            }
+
+            if (syntaxInfoClass.isAnnotationPresent(Examples::class.java)) {
+                combinedExamples.addAll(syntaxInfoClass.getAnnotation(Examples::class.java).value)
+            }
+
+            return if (combinedExamples.isEmpty()) null else cleanExamples(combinedExamples.toTypedArray())
         }
 
         private fun cleanExamples(examples: Array<String>?): Array<String>?{
