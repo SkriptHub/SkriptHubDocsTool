@@ -9,7 +9,10 @@ data class AddonData(var name: String,
                      var types: MutableList<SyntaxData> = mutableListOf(),
                      var functions: MutableList<SyntaxData> = mutableListOf(),
                      var sections: MutableList<SyntaxData> = mutableListOf(),
-                     var structures: MutableList<SyntaxData> = mutableListOf()) {
+                     var structures: MutableList<SyntaxData> = mutableListOf()
+) {
+
+    @Suppress("DuplicatedCode")
     fun sortLists() {
         events.sortBy { info -> info.name }
         conditions.sortBy { info -> info.name }
