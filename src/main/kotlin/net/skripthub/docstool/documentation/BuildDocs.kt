@@ -5,25 +5,17 @@ import ch.njol.skript.classes.ClassInfo
 import ch.njol.skript.lang.SkriptEventInfo
 import ch.njol.skript.lang.SyntaxElementInfo
 import ch.njol.skript.lang.function.Functions
+import ch.njol.skript.log.SkriptLogger
+import ch.njol.skript.registrations.Classes
 import net.skripthub.docstool.modals.AddonData
+import net.skripthub.docstool.modals.AddonMetadata
 import net.skripthub.docstool.modals.SyntaxData
 import net.skripthub.docstool.utils.EventValuesGetter
 import org.bukkit.Bukkit
-import org.bukkit.plugin.java.JavaPlugin
-import java.util.*
-import ch.njol.skript.log.SkriptLogger
-import ch.njol.skript.registrations.Classes
-import ch.njol.skript.lang.function.JavaFunction
-import net.skripthub.docstool.modals.AddonMetadata
-import net.skripthub.docstool.utils.ReflectionUtils
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
-import java.io.IOException
-import java.io.FileOutputStream
-import java.io.OutputStreamWriter
-import java.io.BufferedWriter
-import java.io.File
-import kotlin.collections.ArrayList
+import org.bukkit.plugin.java.JavaPlugin
+import java.io.*
 
 
 class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSender?) : Runnable{
@@ -39,7 +31,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         "org.skriptlang.skript" to "ch.njol.skript"
     )
 
-    private val fileType: FileType = JsonFile(false)
+    private val fileType = JsonFile(false)
 
     fun load() {
         Bukkit.getScheduler().runTaskLaterAsynchronously(instance, this, 10L)
@@ -58,91 +50,58 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         val getter = EventValuesGetter()
         for (eventInfoClassUnsafe in Skript.getEvents()){
             val eventInfoClass = eventInfoClassUnsafe as SkriptEventInfo<*>
-            val addonEvents = getAddon(eventInfoClass)?.events
+            val addonEvents = getAddon(eventInfoClass)?.events ?: continue
             // TODO Throw error when null
-            if (addonEvents != null) {
-                addSyntax(addonEvents,
-                        GenerateSyntax.generateSyntaxFromEvent(eventInfoClass, getter))
-            }
+            addSyntax(addonEvents, GenerateSyntax.generateSyntaxFromEvent(eventInfoClass, getter, sender))
         }
 
         // Conditions
         for (syntaxElementInfo in Skript.getConditions()) {
-//            if (EffectSection::class.java!!.isAssignableFrom(info.c))
-//            //Separate effect sections to effects instead of conditions
-//                addSyntax(getAddon(info.c).getEffects(), SyntaxInfo(info))
-//            else
-            val addonConditions = getAddon(syntaxElementInfo)?.conditions
-            if (addonConditions != null) {
-                addSyntax(addonConditions,
-                        GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
-            }
+            val addonConditions = getAddon(syntaxElementInfo)?.conditions ?: continue
+            addSyntax(addonConditions, GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
         }
 
         // Effects
         for (syntaxElementInfo in Skript.getEffects()) {
-            val addonEffects = getAddon(syntaxElementInfo)?.effects
-            if (addonEffects != null) {
-                addSyntax(addonEffects,
-                        GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
-            }
+            val addonEffects = getAddon(syntaxElementInfo)?.effects ?: continue
+            addSyntax(addonEffects, GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
         }
 
         // Expressions
-        val types = arrayOfNulls<Class<*>>(Classes.getClassInfos().size)
-        var x = 0
-        for (info in Classes.getClassInfos())
-            types[x++] = info.c
+        val types = Classes.getClassInfos().map { it.c }.toTypedArray()
         // A LogHandler for expressions since it catch the changers, which can throw errors in console
         // such as "Expression X can only be used in event Y"
         val log = SkriptLogger.startParseLogHandler()
-        Skript.getExpressions().forEachRemaining { info ->
-            val addonExpressions = getAddon(info)?.expressions
-            if(addonExpressions != null){
-                addSyntax(addonExpressions,
-                        GenerateSyntax.generateSyntaxFromExpression(info, types, sender))
-            }
+        for (info in Skript.getExpressions()) {
+            val addonExpressions = getAddon(info)?.expressions ?: continue
+            addSyntax(addonExpressions, GenerateSyntax.generateSyntaxFromExpression(info, types, sender))
         }
         log.clear()
         log.stop()
 
-        // Types
+        // ClassInfos
         for (syntaxElementInfo in Classes.getClassInfos()) {
-            val addonTypes = getAddon(syntaxElementInfo)?.types
-            if(addonTypes != null){
-                addSyntax(addonTypes,
-                        GenerateSyntax.generateSyntaxFromClassInfo(syntaxElementInfo))
-            }
+            val addonTypes = getAddon(syntaxElementInfo)?.types ?: continue
+            addSyntax(addonTypes, GenerateSyntax.generateSyntaxFromClassInfo(syntaxElementInfo, sender))
         }
 
         // Functions
-        val functions = ReflectionUtils.invokeMethod<Collection<JavaFunction<*>>>(Functions::class.java, "getJavaFunctions", null)
-        if (functions != null) {
-            for (info in functions) {
-                // For now only Skript uses this
-                val addonFunctions = getAddon(info.javaClass)?.functions
-                if (addonFunctions != null) {
-                    addSyntax(addonFunctions, GenerateSyntax.generateSyntaxFromFunctionInfo(info))
-                }
-            }
+        for (info in Functions.getJavaFunctions()) {
+            // For now only Skript uses this // TODO/REMIND: find out what this meant
+            val addonFunctions = getAddon(info.javaClass)?.functions ?: continue
+            addSyntax(addonFunctions, GenerateSyntax.generateSyntaxFromFunctionInfo(info, sender))
         }
 
         // Sections
         for (syntaxElementInfo in Skript.getSections()) {
-            val addonSections = getAddon(syntaxElementInfo)?.sections
-            if (addonSections != null) {
-                addSyntax(addonSections,
-                        GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
-            }
+            val addonSections = getAddon(syntaxElementInfo)?.sections ?: continue
+            addSyntax(addonSections, GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
         }
 
         // Structures
         for (syntaxElementInfo in Skript.getStructures()) {
-            val addonStructures = getAddon(syntaxElementInfo)?.structures
-            if (addonStructures != null) {
-                addSyntax(addonStructures,
-                        GenerateSyntax.generateSyntaxFromStructureInfo(syntaxElementInfo))
-            }
+            val addonStructures = getAddon(syntaxElementInfo)?.structures ?: continue
+            addSyntax(addonStructures, GenerateSyntax.generateSyntaxFromSyntaxElementInfo(syntaxElementInfo, sender))
         }
 
         // Error Check Each Addon! (No id collisions)
@@ -173,14 +132,12 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         // Done, now let's write them all into files
         for (addon in addonMap.values) {
             addon.sortLists()
-            val file = File(docsDir, addon.name + "." + fileType.extension)
+            val file = File(docsDir, "${addon.name}.json")
             if (!file.exists()) {
                 file.parentFile.mkdirs()
                 try {
                     file.createNewFile()
-                } catch (io: IOException) {
-                    // no-op
-                }
+                } catch (ignored: IOException) {}
             }
             try {
                 BufferedWriter(OutputStreamWriter(FileOutputStream(file), "UTF-8")).use { writer -> fileType.write(writer, addon) }
@@ -209,14 +166,14 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         return idCollisions
     }
 
-    private fun attemptIDMerge(listOfSyntaxData: MutableList<SyntaxData>, ids: MutableList<String>){
+    private fun attemptIDMerge(listOfSyntaxData: MutableList<SyntaxData>, ids: MutableList<String>) {
         // Only merge from like Syntax Types
         for(id in ids){
-            attemptTypeMerge(id, listOfSyntaxData)
+            attemptTypeMerge(listOfSyntaxData, id)
         }
     }
 
-    private fun attemptTypeMerge(id: String, listOfSyntaxData: MutableList<SyntaxData>){
+    private fun attemptTypeMerge(listOfSyntaxData: MutableList<SyntaxData>, id: String) {
         // Message attempting merge
         sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
                 + ChatColor.RESET + "] " + ChatColor.GREEN + "Attempting merge of $id")
@@ -277,7 +234,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
     }
 
     private fun addSyntax(list: MutableList<SyntaxData>, syntax: SyntaxData?) {
-        if(syntax == null){
+        if (syntax == null) {
             return
         }
         if (syntax.name.isNullOrEmpty()) {
@@ -332,9 +289,16 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
                 ?.value
     }
 
-    private fun getAddon(c: Class<*>): AddonData? {
-        val name = c.`package`.name
+    private fun getAddon(classObj: Class<*>): AddonData? {
+        var name = classObj.`package`.name
         // If null, bail and throw error
+
+        // Check to see if we need to remap the package to the addon root package.
+        val mappedPackageNode = addonPackageMap.entries.firstOrNull { name.startsWith(it.key) }
+        if (mappedPackageNode != null){
+            name = mappedPackageNode.value
+        }
+
         return addonMap.entries
                 .firstOrNull { name.startsWith(it.key) }
                 ?.value
