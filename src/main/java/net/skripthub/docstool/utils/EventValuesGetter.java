@@ -13,14 +13,14 @@ import java.util.Set;
  * @author Tuke_Nuke on 21/07/2017
  */
 public class EventValuesGetter {
-    private Method m = ReflectionUtils.getMethod(EventValues.class, "getEventValuesList", int.class);
+    private final Method m = ReflectionUtils.getMethod(EventValues.class, "getEventValuesList", int.class);
 
-    public Class[][] getEventValues(Class<? extends Event>[] events) {
+    public Class<?>[][] getEventValues(Class<? extends Event>[] events) {
         //
         //
-        Class[][] eventValues = new Class[3][];
+        Class<?>[][] eventValues = new Class[3][];
         for (int x = 0; x < 3; x++) {
-            Set<Class> clazz = new HashSet<>();
+            Set<Class<?>> clazz = new HashSet<>();
             List<?> values = ReflectionUtils.invokeMethod(m, null, x - 1);
             if (values != null)
                 label: for (Class<?> c : events) {
@@ -40,6 +40,7 @@ public class EventValuesGetter {
                         }
                     }
                 }
+            //noinspection ToArrayCallWithZeroLengthArrayArgument
             eventValues[x] = clazz.toArray(new Class[clazz.size()]);
         }
         return eventValues;
