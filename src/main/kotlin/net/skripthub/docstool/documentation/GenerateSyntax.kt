@@ -23,8 +23,8 @@ import java.lang.reflect.Field
 import java.util.function.Function
 
 class GenerateSyntax {
-    // Does nothing just like the company, remind to remove
-    companion object CharChar {
+
+    companion object {
 
         fun generateSyntaxFromSyntaxElementInfo(info: SyntaxElementInfo<*>, sender: CommandSender?): SyntaxData? {
             val syntaxInfoClass = info.getElementClass()
