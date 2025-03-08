@@ -68,13 +68,12 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         }
 
         // Expressions
-        val types = Classes.getClassInfos().map { it.c }.toTypedArray()
         // A LogHandler for expressions since it catch the changers, which can throw errors in console
         // such as "Expression X can only be used in event Y"
         val log = SkriptLogger.startParseLogHandler()
         for (info in Skript.getExpressions()) {
             val addonExpressions = getAddon(info)?.expressions ?: continue
-            addSyntax(addonExpressions, GenerateSyntax.generateSyntaxFromExpression(info, types, sender))
+            addSyntax(addonExpressions, GenerateSyntax.generateSyntaxFromExpression(info, sender))
         }
         log.clear()
         log.stop()

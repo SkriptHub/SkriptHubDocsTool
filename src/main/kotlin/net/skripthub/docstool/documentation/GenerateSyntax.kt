@@ -46,7 +46,7 @@ class GenerateSyntax {
             return data
         }
 
-        fun generateSyntaxFromExpression(info: ExpressionInfo<*, *>, classes: Array<Class<*>?>, sender: CommandSender?): SyntaxData? {
+        fun generateSyntaxFromExpression(info: ExpressionInfo<*, *>, sender: CommandSender?): SyntaxData? {
             val data = generateSyntaxFromSyntaxElementInfo(info, sender) ?: return null
 
             // Return Type
