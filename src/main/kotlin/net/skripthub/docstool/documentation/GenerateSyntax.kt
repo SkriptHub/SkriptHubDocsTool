@@ -88,6 +88,7 @@ class GenerateSyntax {
             data.patterns = cleanSyntaxInfoPatterns(info.patterns).map { "[on] $it" }.toTypedArray()
             data.requiredPlugins = info.requiredPlugins
             data.keywords = info.keywords
+            data.entries = generateEntriesFromSyntaxElementInfo(info, sender)
 
             if (getter != null) {
                 val classes = getter.getEventValues(info.events)
@@ -102,8 +103,6 @@ class GenerateSyntax {
                 // Sort the event values alphabetically to prevent update churn
                 data.eventValues = times.sortedBy { it }.toTypedArray()
             }
-
-            data.entries = generateEntriesFromSyntaxElementInfo(info, sender)
 
             return data
         }
