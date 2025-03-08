@@ -64,9 +64,7 @@ class GenerateSyntax {
                 data.changers = expr.acceptedChangeModes.entries.filter { it.value is Array<Class<*>> }
                     .map { it.key.name.lowercase(Locale.getDefault()).replace('_', ' ') }
                     .toTypedArray()
-            } catch (exception: Exception) {
-                data.changers = arrayOf("unknown")
-            }
+            } catch (ignored: Exception) {}
 
             return data
         }
@@ -84,7 +82,7 @@ class GenerateSyntax {
             data.description = cleanHTML(info.description)
             data.examples = cleanHTML(info.examples)
             data.since = if (!info.since.isNullOrBlank()) arrayOf(cleanHTML(info.since)!!) else null
-            data.cancellable = info.events.all { Cancellable::class.java.isAssignableFrom(it.javaClass) }
+            data.cancellable = info.events.filterNotNull().all { Cancellable::class.java.isAssignableFrom(it) }
             data.patterns = cleanSyntaxInfoPatterns(info.patterns).map { "[on] $it" }.toTypedArray()
             data.requiredPlugins = info.requiredPlugins
             data.keywords = info.keywords
