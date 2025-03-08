@@ -86,7 +86,6 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
 
         // Functions
         for (info in Functions.getJavaFunctions()) {
-            // For now only Skript uses this // TODO/REMIND: find out what this meant
             val addonFunctions = getAddon(info.javaClass)?.functions ?: continue
             addSyntax(addonFunctions, GenerateSyntax.generateSyntaxFromFunctionInfo(info, sender))
         }
