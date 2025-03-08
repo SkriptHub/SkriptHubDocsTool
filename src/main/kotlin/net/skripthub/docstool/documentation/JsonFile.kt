@@ -13,7 +13,7 @@ import java.util.*
 /**
  * @author Tuke_Nuke on 30/07/2017
  */
-class JsonFile(raw: Boolean) : FileType("json") {
+class JsonFile(raw: Boolean) {
 
     private val gson: Gson
 
@@ -25,7 +25,7 @@ class JsonFile(raw: Boolean) : FileType("json") {
     }
 
     @Throws(IOException::class)
-    override fun write(writer: BufferedWriter, addon: AddonData) {
+    fun write(writer: BufferedWriter, addon: AddonData) {
         val json = JsonObject()
         addMetadata(json, addon.metadata)
         addSection(json, "events", addon.events)
@@ -41,11 +41,7 @@ class JsonFile(raw: Boolean) : FileType("json") {
 
     private fun addSection(json: JsonObject, property: String, list: MutableList<SyntaxData>) {
         val array = JsonArray()
-        for (syntax in list) {
-            val jsonSyntax = getJsonSyntax(syntax)
-            if (jsonSyntax.has("patterns"))
-                array.add(getJsonSyntax(syntax))
-        }
+        list.map(::getJsonSyntax).filter { it.has("id") }.forEach { array.add(it) }
         if (array.size() > 0)
             json.add(property, array)
     }
@@ -53,29 +49,31 @@ class JsonFile(raw: Boolean) : FileType("json") {
     private fun getJsonSyntax(info: SyntaxData): JsonObject {
         val syntax = JsonObject()
         for (entry in info.toMap().entries) {
-            val property = entry.key.lowercase(Locale.getDefault()).replace('_', ' ')
+            val property = entry.key
             when (entry.value) {
                 is String -> syntax.addProperty(property, entry.value as String)
                 is Boolean -> syntax.addProperty(property, entry.value as Boolean)
-                else -> {
+                is Array<*> -> {
                     val json = JsonArray()
                     for (arrayValue in entry.value as Array<*>) {
                         if (arrayValue is String) {
                             json.add(JsonPrimitive(arrayValue))
                         } else if (arrayValue is DocumentationEntryNode) {
-                            json.add(arrayValue.getJsonElement())
+                            json.add(arrayValue.asJsonElement())
+                        } else {
+                            throw IllegalArgumentException("Unsupported Entry Type: found ${entry.value.javaClass} with key ${entry.key}")
                         }
                     }
                     syntax.add(property, json)
                 }
+                else -> throw IllegalArgumentException("Unsupported Entry Type: found ${entry.value.javaClass} with key ${entry.key}")
             }
         }
         return syntax
     }
 
-    private fun addMetadata(json: JsonObject, metadata: AddonMetadata)
-    {
+    private fun addMetadata(json: JsonObject, metadata: AddonMetadata) {
         json.add("metadata", metadata.getJsonElement())
     }
-}
 
+}
