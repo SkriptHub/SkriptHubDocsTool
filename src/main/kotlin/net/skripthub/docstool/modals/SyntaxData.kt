@@ -30,7 +30,7 @@ data class SyntaxData(var id: String? = null,
         addArray(map, "examples", examples)
         addArray(map, "since", since)
         addArray(map, "patterns", patterns)
-        addArray(map, "Changers", changers)
+        addArray(map, "changers", changers)
         addArray(map, "event_values", eventValues)
         addArray(map, "required_plugins", requiredPlugins)
         addArray(map, "entries", entries)
