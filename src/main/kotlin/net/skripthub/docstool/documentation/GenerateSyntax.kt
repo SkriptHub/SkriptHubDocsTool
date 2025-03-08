@@ -156,7 +156,7 @@ class GenerateSyntax {
 
             val parametersString = StringBuilder("${info.name}(")
             if (!info.parameters.isNullOrEmpty()) {
-                parametersString.append(StringUtils.join(info.parameters.map { it.toString() }.toTypedArray(), ","))
+                parametersString.append(StringUtils.join(info.parameters.map { it.toString() }.toTypedArray(), ", "))
             }
             parametersString.append(")")
 
