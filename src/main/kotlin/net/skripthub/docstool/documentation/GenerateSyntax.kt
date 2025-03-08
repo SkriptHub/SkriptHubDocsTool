@@ -20,6 +20,7 @@ import org.skriptlang.skript.lang.entry.EntryValidator
 import org.skriptlang.skript.lang.entry.EntryValidator.EntryValidatorBuilder
 import org.skriptlang.skript.lang.structure.StructureInfo
 import java.lang.reflect.Field
+import java.util.*
 import java.util.function.Function
 
 class GenerateSyntax {
@@ -48,31 +49,30 @@ class GenerateSyntax {
         fun generateSyntaxFromExpression(info: ExpressionInfo<*, *>, classes: Array<Class<*>?>, sender: CommandSender?): SyntaxData? {
             val data = generateSyntaxFromSyntaxElementInfo(info, sender) ?: return null
 
-            //<editor-fold defaultstate="collapsed" desc="Data -> Return Type">
+            // Return Type
             val classInfo = Classes.getExactClassInfo(info.returnType) ?: Classes.getSuperClassInfo(info.returnType)
             if (classInfo != null)
                 data.returnType = if (classInfo.docName.isNullOrBlank()) classInfo.codeName else classInfo.docName
             else
-                // Have a default type of Object, with clarification that it wasn't found
                 // TODO: Throw an error when compiling the json letting the developer know
-                data.returnType = "Object(Unknown)"
-            //</editor-fold>
+                data.returnType = "Object"
 
-            // <editor-fold defaultstate="callapsed" desc="Data -> Changers">
+            // Changers
             val expr = ReflectionUtils.newInstance(info.getElementClass())
-            // TODO: test for UnsupportedOperationException
             // TODO: test for changes in previous supported changers. Loss of classInfo changers are expected
-            val changers = expr.acceptedChangeModes.entries.filter { it.value is Array<Class<*>> }
-                .map { it.key.name.lowercase().replace('_', ' ') }
-                .toTypedArray()
-            data.changers = changers
-            // </editor-fold>
+            try {
+                data.changers = expr.acceptedChangeModes.entries.filter { it.value is Array<Class<*>> }
+                    .map { it.key.name.lowercase(Locale.getDefault()).replace('_', ' ') }
+                    .toTypedArray()
+            } catch (exception: Exception) {
+                data.changers = arrayOf("unknown")
+            }
 
             return data
         }
 
         fun generateSyntaxFromEvent(info: SkriptEventInfo<*>, getter: EventValuesGetter?, sender: CommandSender?): SyntaxData? {
-            if (info.description == null || info.description.contentEquals(SkriptEventInfo.NO_DOC)) {
+            if (info.description != null && info.description.contentEquals(SkriptEventInfo.NO_DOC)) {
                 return null
             }
             val data = SyntaxData()
@@ -110,7 +110,7 @@ class GenerateSyntax {
 
         @Suppress("UNCHECKED_CAST")
         fun generateSyntaxFromClassInfo(info: ClassInfo<*>, sender: CommandSender?) : SyntaxData? {
-            if (info.docName == null || info.docName.equals(ClassInfo.NO_DOC))
+            if (info.docName != null && info.docName.equals(ClassInfo.NO_DOC))
                 return null
             val data = SyntaxData()
 
@@ -130,13 +130,15 @@ class GenerateSyntax {
             // TODO: implement keywords when skript does
             val changer = info.changer
             if (changer != null)
-                // TODO: test for new changer support
-                data.changers = ChangeMode.values().filter { changer.acceptChange(it) != null }.map { it.name }.toTypedArray()
+                data.changers = ChangeMode.values()
+                    .filter { changer.acceptChange(it) != null }
+                    .map { it.name.lowercase(Locale.getDefault()).replace('_', ' ') }
+                    .toTypedArray()
 
             if (!info.userInputPatterns.isNullOrEmpty()) {
                 val size = info.userInputPatterns!!.size
                 data.patterns = Array(size) { _ -> "" }
-                var x = 0
+
                 for (test in info.userInputPatterns!!.indices) {
                     data.patterns!![test] = info.userInputPatterns!![test].pattern()
                         .replace("\\((.+?)\\)\\?".toRegex(), "[$1]")
@@ -185,7 +187,7 @@ class GenerateSyntax {
             val fields: Array<Field>
 
             try {
-                fields = elementClass.declaredFields;
+                fields = elementClass.declaredFields
             } catch (ex: Exception) {
                 sender?.sendMessage(
                     "[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
@@ -194,7 +196,7 @@ class GenerateSyntax {
                 )
 
                 // ex.printStackTrace();
-                return null;
+                return null
             }
 
             for (field in fields) {
@@ -212,7 +214,7 @@ class GenerateSyntax {
                         )
 
                         // ex.printStackTrace();
-                        return null;
+                        return null
                     }
                 } else if (field.type.isAssignableFrom(EntryValidatorBuilder::class.java)) {
                     try {
@@ -229,14 +231,15 @@ class GenerateSyntax {
                         )
 
                         // ex.printStackTrace();
-                        return null;
+                        return null
                     }
                 }
 
-                return entryValidator?.entryData!!.map(DocumentationEntryNode::from).toTypedArray()
+                if (entryValidator?.entryData == null) return null
+                return entryValidator.entryData.map(DocumentationEntryNode::from).toTypedArray()
             }
 
-            return null;
+            return null
         }
 
         private fun cleanSyntaxInfoExamples(syntaxInfoClass: Class<*>): Array<String>? {
@@ -248,9 +251,9 @@ class GenerateSyntax {
 
             val combinedExamples = ArrayList<String?>()
             combinedExamples.addAll(grabRepeatableAnnotation(syntaxInfoClass, Example::class.java, { it.value }))
-            combinedExamples.addAll(grabAnnotation(syntaxInfoClass, Examples::class.java, { it.value })?.toList()!!)
+            grabAnnotation(syntaxInfoClass, Examples::class.java, { it.value })?.toCollection(combinedExamples)
 
-            return if (combinedExamples.isEmpty()) null else cleanHTML(combinedExamples.filterNotNull().toTypedArray())
+            return if (combinedExamples.filterNotNull().isEmpty()) null else cleanHTML(combinedExamples.filterNotNull().toTypedArray())
         }
 
         private fun cleanSyntaxInfoPatterns(patterns: Array<String>, isFunctionPattern: Boolean = false): Array<String> {
