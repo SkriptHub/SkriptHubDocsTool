@@ -59,7 +59,6 @@ class GenerateSyntax {
 
             // Changers
             val expr = ReflectionUtils.newInstance(info.getElementClass())
-            // TODO: test for changes in previous supported changers. Loss of classInfo changers are expected
             try {
                 data.changers = expr.acceptedChangeModes.entries.filter { it.value is Array<Class<*>> }
                     .map { it.key.name.lowercase(Locale.getDefault()).replace('_', ' ') }
