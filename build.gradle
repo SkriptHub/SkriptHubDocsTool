@@ -21,7 +21,7 @@ buildscript {
 }
 
 group 'net.skripthub'
-version '1.11'
+version '1.12'
 
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'

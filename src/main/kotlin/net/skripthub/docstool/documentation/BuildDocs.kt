@@ -36,7 +36,8 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
     // addonPackageMap is a hard coded map of known internal packages so we are always mapping back
     // to the right addon.
     private var addonPackageMap: HashMap<String, String> = hashMapOf(
-        "org.skriptlang.skript" to "ch.njol.skript"
+        "org.skriptlang.skript" to "ch.njol.skript",
+        "Skript" to "ch.njol.skript"
     )
 
     private val fileType: FileType = JsonFile(false)
@@ -333,7 +334,14 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
     }
 
     private fun getAddon(c: Class<*>): AddonData? {
-        val name = c.`package`.name
+        var name = c.`package`.name
+
+        // Check to see if we need to remap the package to the addon root package.
+        val mappedPackageNode = addonPackageMap.entries.firstOrNull { name.startsWith(it.key) }
+        if (mappedPackageNode != null){
+            name = mappedPackageNode.value
+        }
+
         // If null, bail and throw error
         return addonMap.entries
                 .firstOrNull { name.startsWith(it.key) }
