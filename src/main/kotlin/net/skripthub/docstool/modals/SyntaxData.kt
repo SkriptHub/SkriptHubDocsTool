@@ -40,14 +40,14 @@ data class SyntaxData(var id: String? = null,
     }
 
     private fun addProperty(map: MutableMap<String, Any>, property: String, vararg values: String?) {
-        map[property] = if (values.isNotEmpty() && values.any { it.isNullOrBlank().not() }) StringUtils.join(values.filterNotNull(), "\n") else return
+        map[property] = if (values.isNotEmpty() && values.any { !it.isNullOrBlank() }) StringUtils.join(values.filterNotNull(), "\n") else return
     }
 
     private fun addEntryNodes(map: MutableMap<String, Any>, entries: Array<DocumentationEntryNode>?) {
-        map["entries"] = if (entries.isNullOrEmpty().not()) entries!! else return
+        map["entries"] = if (!entries.isNullOrEmpty()) entries else return
     }
 
     private fun addArray(map: MutableMap<String, Any>, property: String, array: Array<String>?) {
-        map[property] = if (array.isNullOrEmpty().not() && array!!.any { it.isNotEmpty() }) array else return
+        map[property] = if (!array.isNullOrEmpty() && array.any { it.isNotEmpty() }) array else return
     }
 }

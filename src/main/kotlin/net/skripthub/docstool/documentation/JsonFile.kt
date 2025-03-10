@@ -13,7 +13,7 @@ import java.util.*
 /**
  * @author Tuke_Nuke on 30/07/2017
  */
-class JsonFile(raw: Boolean) {
+class JsonFile(raw: Boolean) : FileType("json") {
 
     private val gson: Gson
 
@@ -25,7 +25,7 @@ class JsonFile(raw: Boolean) {
     }
 
     @Throws(IOException::class)
-    fun write(writer: BufferedWriter, addon: AddonData) {
+    override fun write(writer: BufferedWriter, addon: AddonData) {
         val json = JsonObject()
         addMetadata(json, addon.metadata)
         addSection(json, "events", addon.events)

@@ -32,7 +32,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         "Skript" to "ch.njol.skript"
     )
 
-    private val fileType = JsonFile(false)
+    private val fileType: FileType = JsonFile(false)
 
     fun load() {
         Bukkit.getScheduler().runTaskLaterAsynchronously(instance, this, 10L)
@@ -131,7 +131,7 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         // Done, now let's write them all into files
         for (addon in addonMap.values) {
             addon.sortLists()
-            val file = File(docsDir, "${addon.name}.json")
+            val file = File(docsDir, "${addon.name}.${fileType.extension}")
             if (!file.exists()) {
                 file.parentFile.mkdirs()
                 try {

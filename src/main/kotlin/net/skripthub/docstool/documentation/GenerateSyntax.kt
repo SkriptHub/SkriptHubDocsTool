@@ -62,6 +62,7 @@ class GenerateSyntax {
             try {
                 data.changers = expr.acceptedChangeModes.entries.filter { it.value is Array<Class<*>> }
                     .map { it.key.name.lowercase(Locale.getDefault()).replace('_', ' ') }
+                    .sorted()
                     .toTypedArray()
             } catch (ignored: Exception) {}
 
@@ -129,6 +130,7 @@ class GenerateSyntax {
                 data.changers = ChangeMode.values()
                     .filter { changer.acceptChange(it) != null }
                     .map { it.name.lowercase(Locale.getDefault()).replace('_', ' ') }
+                    .sorted()
                     .toTypedArray()
 
             if (!info.userInputPatterns.isNullOrEmpty()) {
