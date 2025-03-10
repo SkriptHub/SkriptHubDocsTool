@@ -7,7 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin
 class Core: JavaPlugin() {
 
     companion object {
-        var plugin: JavaPlugin? = null
+        lateinit var plugin: JavaPlugin
             private set
     }
 
