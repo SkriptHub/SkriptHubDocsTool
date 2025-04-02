@@ -82,13 +82,13 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         // Types
         for (syntaxElementInfo in Classes.getClassInfos()) {
             val addonTypes = getAddon(syntaxElementInfo)?.types ?: continue
-            addSyntax(addonTypes, GenerateSyntax.generateSyntaxFromClassInfo(syntaxElementInfo, sender))
+            addSyntax(addonTypes, GenerateSyntax.generateSyntaxFromClassInfo(syntaxElementInfo))
         }
 
         // Functions
         for (info in Functions.getJavaFunctions()) {
             val addonFunctions = getAddon(info.javaClass)?.functions ?: continue
-            addSyntax(addonFunctions, GenerateSyntax.generateSyntaxFromFunctionInfo(info, sender))
+            addSyntax(addonFunctions, GenerateSyntax.generateSyntaxFromFunctionInfo(info))
         }
 
         // Sections

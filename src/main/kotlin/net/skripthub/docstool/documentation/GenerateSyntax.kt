@@ -106,7 +106,7 @@ class GenerateSyntax {
         }
 
         @Suppress("UNCHECKED_CAST")
-        fun generateSyntaxFromClassInfo(info: ClassInfo<*>, sender: CommandSender?) : SyntaxData? {
+        fun generateSyntaxFromClassInfo(info: ClassInfo<*>) : SyntaxData? {
             if (info.docName != null && info.docName.equals(ClassInfo.NO_DOC))
                 return null
             val data = SyntaxData()
@@ -148,7 +148,7 @@ class GenerateSyntax {
             return data
         }
 
-        fun generateSyntaxFromFunctionInfo(info: JavaFunction<*>, sender: CommandSender?) : SyntaxData {
+        fun generateSyntaxFromFunctionInfo(info: JavaFunction<*>) : SyntaxData {
             val data = SyntaxData()
             data.name = info.name
             data.id = "function_" + info.name

@@ -25,7 +25,7 @@ public class EventValuesGetter {
             if (values != null)
                 label: for (Class<?> c : events) {
                     for (Object eventValue : values) {
-                        Class<?> event = ReflectionUtils.getField(eventValue.getClass(), eventValue, "event");
+                        Class<?> event = ReflectionUtils.getField(eventValue.getClass(), eventValue, "eventClass");
                         if (event != null && (c.isAssignableFrom(event) || event.isAssignableFrom(c))) {
                             Class<?>[] excluded = ReflectionUtils.getField(eventValue.getClass(), eventValue, "excludes");
                             if (excluded != null) {
@@ -33,7 +33,7 @@ public class EventValuesGetter {
                                     if (exclude.isAssignableFrom(c))
                                         continue label;
                             }
-                            Class<?> ret = ReflectionUtils.getField(eventValue.getClass(), eventValue, "c");
+                            Class<?> ret = ReflectionUtils.getField(eventValue.getClass(), eventValue, "valueClass");
                             if (ret != null) {
                                 clazz.add(ret);
                             }
