@@ -1,5 +1,6 @@
 package net.skripthub.docstool.documentation
 
+import ch.njol.skript.Skript
 import ch.njol.skript.classes.Changer.ChangeMode
 import ch.njol.skript.classes.ClassInfo
 import ch.njol.skript.doc.*
@@ -248,8 +249,8 @@ class GenerateSyntax {
             // Examples is the classic example annotation
 
             val combinedExamples = ArrayList<String?>()
-            combinedExamples.addAll(grabRepeatableAnnotation(syntaxInfoClass, Example::class.java, { it.value }))
             grabAnnotation(syntaxInfoClass, Examples::class.java, { it.value })?.toCollection(combinedExamples)
+            grabAnnotation(syntaxInfoClass, Example.Examples::class.java, { it.value.map { example -> example.value } })?.toCollection(combinedExamples)
 
             return if (combinedExamples.filterNotNull().isEmpty()) null else cleanHTML(combinedExamples.filterNotNull().toTypedArray())
         }
@@ -315,12 +316,6 @@ class GenerateSyntax {
             return supplier.apply(source.getAnnotation(annotation)) ?: default
         }
 
-        private inline fun <A : Annotation, reified R> grabRepeatableAnnotation(source: Class<*>, annotation: Class<A>, supplier: Function<A, R?>, default: R? = null): Array<R?> {
-            if (!source.isAnnotationPresent(annotation)) return arrayOf(default)
-            return source.getAnnotationsByType(annotation)
-                .map { supplier.apply(it) }
-                .toTypedArray()
-        }
-
     }
+
 }
