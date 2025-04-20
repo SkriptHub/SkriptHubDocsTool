@@ -250,6 +250,9 @@ class GenerateSyntax {
             val combinedExamples = ArrayList<String?>()
             grabAnnotation(syntaxInfoClass, Examples::class.java, { it.value })?.toCollection(combinedExamples)
             grabAnnotation(syntaxInfoClass, Example.Examples::class.java, { it.value.map { example -> example.value } })?.toCollection(combinedExamples)
+            grabAnnotation(syntaxInfoClass, Example::class.java, { it.value })?.let {
+                exampleString -> combinedExamples.add(exampleString)
+            }
 
             return if (combinedExamples.filterNotNull().isEmpty()) null else cleanHTML(combinedExamples.filterNotNull().toTypedArray())
         }
