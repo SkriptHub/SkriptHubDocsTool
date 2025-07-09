@@ -81,7 +81,7 @@ class GenerateSyntax {
             }
             data.description = cleanHTML(info.description)
             data.examples = cleanHTML(info.examples)
-            data.since = if (!info.since.isNullOrBlank()) arrayOf(cleanHTML(info.since)!!) else null
+            data.since = if (!info.since.isNullOrEmpty()) info.since?.map { cleanHTML(it).toString() }?.toTypedArray() else null
             data.cancellable = info.events.filterNotNull().all { Cancellable::class.java.isAssignableFrom(it) }
             data.patterns = cleanSyntaxInfoPatterns(info.patterns).map { "[on] $it" }.toTypedArray()
             data.requiredPlugins = info.requiredPlugins
