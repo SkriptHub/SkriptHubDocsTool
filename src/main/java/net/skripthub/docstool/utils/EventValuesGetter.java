@@ -13,7 +13,7 @@ import java.util.Set;
  * @author Tuke_Nuke on 21/07/2017
  */
 public class EventValuesGetter {
-    private final Method m = ReflectionUtils.getMethod(EventValues.class, "getEventValuesList", int.class);
+    private final Method m = ReflectionUtils.getMethod(EventValues.class, "getEventValuesListForTime", int.class);
 
     public Class<?>[][] getEventValues(Class<? extends Event>[] events) {
         //

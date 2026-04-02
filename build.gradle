@@ -16,14 +16,14 @@ buildscript {
         gradlePluginPortal()
     }
     dependencies {
-        classpath 'com.github.johnrengelman:shadow:8.1.1'
+        classpath 'com.gradleup.shadow:shadow-gradle-plugin:8.3.9'
     }
 }
 
 group 'net.skripthub'
-version '1.14'
+version '1.15'
 
-apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.gradleup.shadow'
 apply plugin: 'java'
 apply plugin: 'kotlin'
 
@@ -52,7 +52,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.SkriptLang:Skript:2.12.0-pre1'
+    implementation 'com.github.SkriptLang:Skript:2.15.0-pre1'
 
     implementation group: 'org.spigotmc', name: 'spigot-api', version:'1.19.4-R0.1-SNAPSHOT'
 
