@@ -21,7 +21,7 @@ buildscript {
 }
 
 group 'net.skripthub'
-version '1.15'
+version '1.16'
 
 apply plugin: 'com.gradleup.shadow'
 apply plugin: 'java'

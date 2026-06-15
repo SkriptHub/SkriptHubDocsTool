@@ -14,6 +14,7 @@ import net.skripthub.docstool.utils.EventValuesGetter
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
+import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.*
 
@@ -43,9 +44,56 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             return
         addonMap[Skript::class.java.`package`.name] = AddonData(
                 "Skript", AddonMetadata(Skript.getVersion().toString()))
-        for (addon in Skript.getAddons())
-            addonMap[addon.plugin.javaClass.`package`.name] = AddonData(
-                    addon.name, AddonMetadata(addon.version.toString()))
+        for (addon in Skript.getAddons()) {
+            val packageName = addon.plugin.javaClass.`package`.name
+
+            // Addons that use SKR have their own wrapper classes, documentation abstractions and documentation generators
+            // that need to be invoked here. These addons are then skipped when we process remaining addons/syntax elements
+            // that don't use the SKR wrapper.
+            try {
+                // Check to see if this addon is using SKR by trying to find it's shaded "Registration" class
+                val fields = addon.plugin.javaClass.declaredFields
+                val skrRegistrationField = fields.firstOrNull { it.type.name == "$packageName.skr.Registration" }
+
+                if (skrRegistrationField != null)
+                {
+                    // This addon probably uses SKR, now try to get to the shaded JsonDocGenerator and Registration
+                    // classes so we can invoke generateDocs to build the json docs using SKR.
+                    val addonPluginLoader = addon.plugin.javaClass.classLoader
+                    val jsonDocGeneratorShadedClass = Class.forName("$packageName.skr.JsonDocGenerator", true, addonPluginLoader)
+                    val registrationShadedClass = Class.forName("$packageName.skr.Registration", true, addonPluginLoader)
+
+                    val addonJsonDocGeneratorConstructor = jsonDocGeneratorShadedClass.getDeclaredConstructor(Plugin::class.java, registrationShadedClass)
+
+                    skrRegistrationField.isAccessible = true
+                    val addonsSkrRegistration = skrRegistrationField.get(addon.plugin)
+
+                    val localJsonDocGeneratorInstance = addonJsonDocGeneratorConstructor.newInstance(addon.plugin, addonsSkrRegistration)
+                    val generateDocsMethod = localJsonDocGeneratorInstance.javaClass.getDeclaredMethod("generateDocs")
+
+                    sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+                            + ChatColor.RESET + "] " + ChatColor.GOLD + addon.name + " will use SKR to generate docs")
+
+                    generateDocsMethod.invoke(localJsonDocGeneratorInstance);
+
+                    sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+                            + ChatColor.RESET + "] " + ChatColor.GREEN + "Completed SKR Docs Generation for " + addon.name)
+
+                    sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
+                            + ChatColor.RESET + "] " + ChatColor.GREEN + "SKR Docs for ${addon.name} live at plugins/${addon.name}/json-docs.json")
+
+                    continue;
+                }
+            } catch (e: Exception) {
+                // no-op
+            }
+
+            // Uses normal Skript docs
+            addonMap[packageName] = AddonData(
+                addon.name, AddonMetadata(addon.version.toString())
+            )
+
+        }
 
         // Events
         val getter = EventValuesGetter()
@@ -143,7 +191,6 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
             } catch (io: IOException) {
                 io.printStackTrace()
             }
-
         }
 
         sender?.sendMessage("[" + ChatColor.DARK_AQUA + "Skript Hub Docs Tool"
