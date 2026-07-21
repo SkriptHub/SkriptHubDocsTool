@@ -9,7 +9,6 @@ import java.io.BufferedWriter
 import java.io.IOException
 import java.util.*
 
-
 /**
  * @author Tuke_Nuke on 30/07/2017
  */
@@ -75,5 +74,4 @@ class JsonFile(raw: Boolean) : FileType("json") {
     private fun addMetadata(json: JsonObject, metadata: AddonMetadata) {
         json.add("metadata", metadata.getJsonElement())
     }
-
 }

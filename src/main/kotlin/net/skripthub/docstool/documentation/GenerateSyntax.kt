@@ -11,11 +11,12 @@ import ch.njol.skript.registrations.Classes
 import ch.njol.util.StringUtils
 import net.skripthub.docstool.modals.DocumentationEntryNode
 import net.skripthub.docstool.modals.SyntaxData
-import net.skripthub.docstool.utils.EventValuesGetter
 import net.skripthub.docstool.utils.ReflectionUtils
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 import org.bukkit.event.Cancellable
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry
 import org.skriptlang.skript.lang.entry.EntryValidator
 import org.skriptlang.skript.lang.entry.EntryValidator.EntryValidatorBuilder
 import org.skriptlang.skript.lang.structure.StructureInfo
@@ -69,7 +70,7 @@ class GenerateSyntax {
             return data
         }
 
-        fun generateSyntaxFromEvent(info: SkriptEventInfo<*>, getter: EventValuesGetter?, sender: CommandSender?): SyntaxData? {
+        fun generateSyntaxFromEvent(info: SkriptEventInfo<*>, eventValueRegistry: EventValueRegistry, sender: CommandSender?): SyntaxData? {
             if (info.description != null && info.description.contentEquals(SkriptEventInfo.NO_DOC)) {
                 return null
             }
@@ -88,18 +89,32 @@ class GenerateSyntax {
             data.keywords = info.keywords
             data.entries = generateEntriesFromSyntaxElementInfo(info, sender)
 
-            if (getter != null) {
-                val classes = getter.getEventValues(info.events)
-                if (classes == null || classes.isEmpty())
-                    return null
-                val time = arrayOf("past event-", "event-", "future event-")
-                val times = ArrayList<String>()
-                for (x in classes.indices)
-                    (0 until classes[x].size)
-                        .mapNotNull { grabCodeName(classes[x][it]) }
-                        .mapTo(times) { time[x] + it }
-                // Sort the event values alphabetically to prevent update churn
-                data.eventValues = times.sortedBy { it }.toTypedArray()
+            val eventValuesStrings = ArrayList<String>()
+
+            for (eventClass in info.events) {
+                val eventValues = eventValueRegistry.elements(eventClass)
+
+                for (eventValue in eventValues)
+                {
+                    val patterns = eventValue.patterns()
+                    val time = eventValue.time()
+                    if (!patterns.isNullOrEmpty()) {
+                        for (pattern in patterns) {
+                            if (!pattern.isNullOrEmpty()) {
+                                eventValuesStrings.add(buildEventValueString(pattern, time))
+                            }
+                        }
+                    } else {
+                        val codeName = grabCodeName(eventValue.valueClass())
+                        if (!codeName.isNullOrEmpty()) {
+                            eventValuesStrings.add(buildEventValueString(codeName, time))
+                        }
+                    }
+                }
+            }
+
+            if (eventValuesStrings.isNotEmpty()) {
+                data.eventValues = eventValuesStrings.sortedBy { it }.toTypedArray()
             }
 
             return data
@@ -310,6 +325,20 @@ class GenerateSyntax {
                 ?: return null // If neither of the two methods managed to find a classinfo, return null
             val name = classInfo.name
             return if (classObj.isArray) name.plural else name.singular
+        }
+
+        private fun buildEventValueString(eventValue: String, time: EventValue.Time): String {
+            return when (time) {
+                EventValue.Time.NOW -> {
+                    "event-$eventValue"
+                }
+                EventValue.Time.PAST -> {
+                    "past event-$eventValue"
+                }
+                else -> {
+                    "future event-$eventValue"
+                }
+            }
         }
 
         private fun <A : Annotation, R> grabAnnotation(source: Class<*>, annotation: Class<A>, supplier: Function<A, R?>, default: R? = null): R? {

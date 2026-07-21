@@ -10,12 +10,12 @@ import ch.njol.skript.registrations.Classes
 import net.skripthub.docstool.modals.AddonData
 import net.skripthub.docstool.modals.AddonMetadata
 import net.skripthub.docstool.modals.SyntaxData
-import net.skripthub.docstool.utils.EventValuesGetter
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry
 import java.io.*
 
 
@@ -96,12 +96,12 @@ class BuildDocs(private val instance: JavaPlugin, private val sender: CommandSen
         }
 
         // Events
-        val getter = EventValuesGetter()
+        val eventValueRegistry = Skript.instance().registry(EventValueRegistry::class.java)
         for (eventInfoClassUnsafe in Skript.getEvents()){
             val eventInfoClass = eventInfoClassUnsafe as SkriptEventInfo<*>
             val addonEvents = getAddon(eventInfoClass)?.events ?: continue
             // TODO Throw error when null
-            addSyntax(addonEvents, GenerateSyntax.generateSyntaxFromEvent(eventInfoClass, getter, sender))
+            addSyntax(addonEvents, GenerateSyntax.generateSyntaxFromEvent(eventInfoClass, eventValueRegistry, sender))
         }
 
         // Conditions
